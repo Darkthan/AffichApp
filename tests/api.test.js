@@ -40,4 +40,17 @@ describe('API smoke', () => {
     const res = await request(app).post('/api/auth/login').send({ email: 'admin@example.com', password: 'wrong' });
     expect(res.status).toBe(401);
   });
+
+  it('POST /api/auth/register creates a new user and appears in GET /api/users', async () => {
+    const unique = `user${Date.now()}@example.com`;
+    const create = await request(app)
+      .post('/api/auth/register')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ name: 'U Test', email: unique, role: 'requester', password: 'pw12345' });
+    expect(create.status).toBe(201);
+    const list = await request(app).get('/api/users').set('Authorization', 'Bearer ' + token);
+    expect(list.status).toBe(200);
+    const emails = list.body.map((u) => u.email);
+    expect(emails).toContain(unique);
+  });
 });

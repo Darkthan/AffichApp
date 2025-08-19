@@ -1,13 +1,17 @@
 let authToken = localStorage.getItem('token') || '';
 
 function authHeaders() {
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = {};
   if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
   return headers;
 }
 
 async function fetchJSON(url, options = {}) {
-  const res = await fetch(url, { headers: authHeaders(), ...options });
+  const base = options || {};
+  const headers = { ...(base.headers || {}) };
+  if (authToken && !headers['Authorization']) headers['Authorization'] = 'Bearer ' + authToken;
+  if (base.body != null && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  const res = await fetch(url, { ...base, headers });
   let data = null;
   try { data = await res.json(); } catch {}
   if (!res.ok) {
@@ -244,8 +248,14 @@ async function addCardType(label) {
 }
 
 async function addUser(formData) {
-  await fetchJSON('/api/auth/register', { method: 'POST', body: JSON.stringify(formData) });
-  await loadUsers();
+  const created = await fetchJSON('/api/auth/register', { method: 'POST', body: JSON.stringify(formData) });
+  try {
+    await loadUsers();
+  } catch (e) {
+    // Ne pas faire échouer la création si le rafraîchissement de la liste rate
+    console.warn('Refresh users failed after create:', e);
+  }
+  return created;
 }
 
 async function loadUsers() {
@@ -330,22 +340,37 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('logout-btn').addEventListener('click', () => logout());
   document.getElementById('add-type-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const label = new FormData(e.currentTarget).get('label');
+    const formEl = e.currentTarget;
+    const label = new FormData(formEl).get('label');
     try {
       await addCardType(label);
-      e.currentTarget.reset();
+      formEl.reset();
     } catch (err) {
       alert("Impossible d'ajouter le type: " + (err.message || ''));
     }
   });
+  let creatingUser = false;
   document.getElementById('add-user-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const data = Object.fromEntries(new FormData(e.currentTarget).entries());
+    if (creatingUser) return;
+    creatingUser = true;
+    const formEl = e.currentTarget;
+    const submitBtn = formEl.querySelector('button[type="submit"]');
+    const msgEl = document.getElementById('add-user-msg');
+    if (msgEl) { msgEl.textContent = ''; msgEl.className = 'msg'; }
+    const data = Object.fromEntries(new FormData(formEl).entries());
     try {
+      if (submitBtn) submitBtn.disabled = true;
       await addUser(data);
-      e.currentTarget.reset();
-    } catch {
-      alert('Impossible de créer l\'utilisateur');
+      formEl.reset();
+      if (msgEl) { msgEl.textContent = 'Utilisateur créé ✔'; msgEl.className = 'msg success'; }
+    } catch (err) {
+      const txt = err && err.status === 409 ? 'Email déjà utilisé' : "Impossible de créer l'utilisateur";
+      if (msgEl) { msgEl.textContent = txt; msgEl.className = 'msg error'; }
+      else alert(txt);
+    } finally {
+      creatingUser = false;
+      if (submitBtn) submitBtn.disabled = false;
     }
   });
 
@@ -359,4 +384,3 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderAuth();
   if (window.currentUser && window.currentUser.role === 'admin') await loadUsers();
 });
-

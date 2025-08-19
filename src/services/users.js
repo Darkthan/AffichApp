@@ -79,7 +79,7 @@ async function create({ name, email, role, password }) {
   const user = { id: nextId, name, email, role, passwordHash, createdAt: now, updatedAt: now };
   users.push(user);
   await writeAll(users);
-  return { id: user.id, name, email, role: mainRole, roles, createdAt: now, updatedAt: now };
+  return { id: user.id, name, email, role, createdAt: now, updatedAt: now };
 }
 
 async function update(id, changes) {
