@@ -191,24 +191,24 @@ async function login(email, password) {
   authToken = res.token;
   localStorage.setItem('token', authToken);
   window.currentUser = res.user;
-  renderAuth();
+  window.location.replace('/login.html');
 }
 
 function logout() {
   authToken = '';
   localStorage.removeItem('token');
   window.currentUser = null;
-  renderAuth();
+  window.location.replace('/login.html');
 }
 
 function renderAuth() {
-  const loginForm = document.getElementById('login-form');
   const userInfo = document.getElementById('user-info');
+  const loginLink = document.getElementById('login-link');
   const adminPanel = document.getElementById('admin-panel');
   const requestForm = document.getElementById('request-form');
   const isAuth = !!window.currentUser;
   if (isAuth) {
-    loginForm.classList.add('hidden');
+    if (loginLink) loginLink.classList.add('hidden');
     userInfo.classList.remove('hidden');
     userInfo.removeAttribute('hidden');
     document.getElementById('user-name').textContent = window.currentUser.name || window.currentUser.email;
@@ -217,7 +217,7 @@ function renderAuth() {
     requestForm.classList.remove('hidden');
     requestForm.removeAttribute('hidden');
   } else {
-    loginForm.classList.remove('hidden');
+    if (loginLink) loginLink.classList.remove('hidden');
     userInfo.classList.add('hidden');
     userInfo.setAttribute('hidden','');
     adminPanel.classList.add('hidden');
@@ -324,9 +324,29 @@ async function loadUsers() {
   } catch {}
 }
 
+
+async function ensureAuthOrRedirect() {
+  if (!authToken) {
+    window.location.replace('/login.html');
+    return false;
+  }
+  try {
+    const me = await fetchJSON('/api/auth/me');
+    window.currentUser = me.user;
+    return true;
+  } catch {
+    try { localStorage.removeItem('token'); } catch {}
+    window.location.replace('/login.html');
+    return false;
+  }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
+  const ok = await ensureAuthOrRedirect();
+  if (!ok) return;
   document.getElementById('request-form').addEventListener('submit', onSubmit);
-  document.getElementById('login-form').addEventListener('submit', async (e) => {
+  /* login form removed; standalone page */
+  /*document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const email = fd.get('email');
@@ -336,8 +356,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     } catch {
       alert('Identifiants invalides');
     }
-  });
-  document.getElementById('logout-btn').addEventListener('click', () => logout());
+  });*/
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) logoutBtn.addEventListener('click', () => logout());
   document.getElementById('add-type-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formEl = e.currentTarget;

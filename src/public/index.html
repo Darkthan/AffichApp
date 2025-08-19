@@ -9,16 +9,12 @@
   <body>
     <main class="container">
       <header class="card">
-        <h2>Authentification</h2>
+        <h2>Compte</h2>
         <div id="auth-area">
-          <form id="login-form" class="inline">
-            <input type="email" name="email" placeholder="Email" required />
-            <input type="password" name="password" placeholder="Mot de passe" required />
-            <button type="submit">Se connecter</button>
-          </form>
+          <div id="login-link"><a class="btn" href="/login.html">Se connecter</a></div>
           <div id="user-info" class="hidden" hidden>
             Connecté en tant que <span id="user-name"></span> (<span id="user-role"></span>)
-            <button id="logout-btn">Se déconnecter</button>
+            <button id="logout-btn" type="button">Se déconnecter</button>
           </div>
           <p class="muted small">Admin par défaut: admin@example.com / admin123 (à changer)</p>
         </div>

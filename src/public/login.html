@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Connexion — Application Demandes de Cartes</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .login-wrapper { max-width: 520px; margin: 64px auto; }
+      .login-wrapper header { text-align: center; margin-bottom: 16px; }
+    </style>
+  </head>
+  <body>
+    <main class="container login-wrapper">
+      <header>
+        <h1>Se connecter</h1>
+        <p class="muted small">Admin par défaut: admin@example.com / admin123 (à changer)</p>
+      </header>
+      <section class="card">
+        <form id="login-form" class="grid">
+          <label>
+            Email
+            <input type="email" name="email" placeholder="email@example.com" required />
+          </label>
+          <label>
+            Mot de passe
+            <input type="password" name="password" placeholder="Votre mot de passe" required />
+          </label>
+          <button type="submit">Se connecter</button>
+          <p id="login-msg" class="msg"></p>
+        </form>
+      </section>
+    </main>
+    <script src="/login.js" defer></script>
+  </body>
+  </html>
+
