@@ -53,4 +53,18 @@ describe('API smoke', () => {
     const emails = list.body.map((u) => u.email);
     expect(emails).toContain(unique);
   });
+
+  it('POST /api/auth/register returns 409 on duplicate email', async () => {
+    const email = `dup-${Date.now()}@example.com`;
+    const first = await request(app)
+      .post('/api/auth/register')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ name: 'Dup', email, role: 'requester', password: 'pw12345' });
+    expect(first.status).toBe(201);
+    const second = await request(app)
+      .post('/api/auth/register')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ name: 'Dup', email, role: 'requester', password: 'pw12345' });
+    expect(second.status).toBe(409);
+  });
 });

@@ -30,8 +30,8 @@ router.post('/register', requireAuth, async (req, res) => {
     res.status(201).json(user);
   } catch (e) {
     if (e.code === 'E_DUPLICATE_EMAIL') return res.status(409).json({ error: 'Email already exists' });
-    console.error(e);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Register error:', e);
+    res.status(500).json({ error: 'Internal Server Error', message: e && e.message ? e.message : undefined });
   }
 });
 
