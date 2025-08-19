@@ -1,4 +1,9 @@
-let authToken = localStorage.getItem('token') || '';
+function getStoredToken() {
+  try {
+    return localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+  } catch { return ''; }
+}
+let authToken = getStoredToken();
 
 async function fetchJSON(url, options = {}) {
   const base = options || {};
@@ -17,10 +22,16 @@ async function fetchJSON(url, options = {}) {
   return data;
 }
 
-async function login(email, password) {
+async function login(email, password, remember) {
   const res = await fetchJSON('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
   authToken = res.token;
-  try { localStorage.setItem('token', authToken); } catch {}
+  try {
+    // Clear previous tokens then set according to preference
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    if (remember) localStorage.setItem('token', authToken);
+    else sessionStorage.setItem('token', authToken);
+  } catch {}
   // verify and redirect
   try { await fetchJSON('/api/auth/me', { headers: { Authorization: 'Bearer ' + authToken } }); } catch {}
   window.location.replace('/');
@@ -47,7 +58,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     msg.textContent = '';
     try {
       const fd = new FormData(form);
-      await login(fd.get('email'), fd.get('password'));
+      const remember = !!fd.get('remember');
+      await login(fd.get('email'), fd.get('password'), remember);
     } catch (err) {
       const code = err && err.status ? ` (HTTP ${err.status})` : '';
       msg.textContent = 'Identifiants invalides' + code;
@@ -55,4 +67,3 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   });
 });
-

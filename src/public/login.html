@@ -8,6 +8,11 @@
     <style>
       .login-wrapper { max-width: 520px; margin: 64px auto; }
       .login-wrapper header { text-align: center; margin-bottom: 16px; }
+      /* Align checkbox and label text nicely */
+      .remember-inline { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+      .remember-inline input[type="checkbox"] { margin: 0; }
+      /* Only this checkbox has a custom width */
+      .remember-checkbox { width: 10%; }
     </style>
   </head>
   <body>
@@ -26,6 +31,10 @@
             Mot de passe
             <input type="password" name="password" placeholder="Votre mot de passe" required />
           </label>
+          <label class="remember-inline">
+            <input class="remember-checkbox" type="checkbox" name="remember" />
+            <span>Rester connecté</span>
+          </label>
           <button type="submit">Se connecter</button>
           <p id="login-msg" class="msg"></p>
         </form>
@@ -34,4 +43,3 @@
     <script src="/login.js" defer></script>
   </body>
   </html>
-

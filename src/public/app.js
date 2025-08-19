@@ -1,4 +1,9 @@
-let authToken = localStorage.getItem('token') || '';
+function getStoredToken() {
+  try {
+    return localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+  } catch { return ''; }
+}
+let authToken = getStoredToken();
 
 function authHeaders() {
   const headers = {};
@@ -196,7 +201,8 @@ async function login(email, password) {
 
 function logout() {
   authToken = '';
-  localStorage.removeItem('token');
+  try { localStorage.removeItem('token'); } catch {}
+  try { sessionStorage.removeItem('token'); } catch {}
   window.currentUser = null;
   window.location.replace('/login.html');
 }
