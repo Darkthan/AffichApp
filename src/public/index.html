@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Application Demandes de Cartes</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="card">
+        <h2>Authentification</h2>
+        <div id="auth-area">
+          <form id="login-form" class="inline">
+            <input type="email" name="email" placeholder="Email" required />
+            <input type="password" name="password" placeholder="Mot de passe" required />
+            <button type="submit">Se connecter</button>
+          </form>
+          <div id="user-info" class="hidden" hidden>
+            Connecté en tant que <span id="user-name"></span> (<span id="user-role"></span>)
+            <button id="logout-btn">Se déconnecter</button>
+          </div>
+          <p class="muted small">Admin par défaut: admin@example.com / admin123 (à changer)</p>
+        </div>
+      </header>
+      <h1>Cartes à récupérer</h1>
+      <section class="card">
+        <h2>Soumettre une demande</h2>
+        <form id="request-form" class="requires-auth hidden" hidden>
+          <div class="grid">
+            <label>
+              Nom du demandeur
+              <input type="text" name="applicantName" required />
+            </label>
+            <label>
+              Email (optionnel)
+              <input type="email" name="email" />
+            </label>
+          </div>
+          <label>
+            Type de carte
+            <select name="cardType" id="card-type-select" required>
+              <option value="">-- Choisir --</option>
+            </select>
+          </label>
+          <label>
+            Détails (optionnel)
+            <textarea name="details" rows="3" placeholder="Précisions utiles..."></textarea>
+          </label>
+          <button type="submit">Envoyer la demande</button>
+          <p id="form-msg" class="msg"></p>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Liste des demandes</h2>
+        <div id="list"></div>
+      </section>
+
+      <section class="card hidden" id="admin-panel" hidden>
+        <h2>Administration</h2>
+        <h3>Ajouter un type de carte</h3>
+        <form id="add-type-form" class="inline">
+          <input type="text" name="label" placeholder="Libellé (ex: Visiteurs)" required />
+          <button type="submit">Ajouter</button>
+        </form>
+        <h3>Utilisateurs</h3>
+        <form id="add-user-form" class="grid">
+          <input type="text" name="name" placeholder="Nom" required />
+          <input type="email" name="email" placeholder="Email" required />
+          <select name="role" required>
+            <option value="requester">Demandeur</option>
+            <option value="admin">Administrateur</option>
+          </select>
+          <input type="password" name="password" placeholder="Mot de passe" required />
+          <button type="submit">Créer l'utilisateur</button>
+        </form>
+        <div id="users-list"></div>
+      </section>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+  </html>

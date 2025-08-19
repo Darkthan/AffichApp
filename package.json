@@ -1,0 +1,36 @@
+{
+  "name": "application-demandes-cartes",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Application de gestion des demandes de cartes (API Express + frontend statique)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "jest",
+    "smoke": "node scripts/smoke.js",
+    "lint": "eslint .",
+    "format": "prettier -w \"**/*.{js,json,md,css,html}\"",
+    "format:check": "prettier -c \"**/*.{js,json,md,css,html}\"",
+    "docker:build": "docker build -t application-demandes-cartes:latest .",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:up:v1": "docker-compose up --build -d",
+    "docker:down:v1": "docker-compose down",
+    "docker:logs:v1": "docker-compose logs -f"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^9.6.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.2",
+    "supertest": "^6.3.4"
+  }
+}
