@@ -253,6 +253,62 @@ async function addCardType(label) {
   await loadCardTypes();
 }
 
+async function deleteCardType(code) {
+  const res = await fetch(`/api/card-types/${encodeURIComponent(code)}`, { method: 'DELETE', headers: authHeaders() });
+  if (res.status === 409) {
+    const e = new Error('in_use');
+    e.status = 409;
+    throw e;
+  }
+  if (!res.ok) throw new Error('delete_failed');
+}
+
+async function loadTypesList() {
+  try {
+    const types = await fetchJSON('/api/card-types');
+    const container = document.getElementById('types-list');
+    if (!container) return;
+    container.innerHTML = '';
+    const table = el('table', { class: 'table' });
+    table.appendChild(el('thead', {}, el('tr', {}, el('th', {}, 'Libellé'), el('th', {}, 'Code'), el('th', {}, 'Actions'))));
+    const tbody = el('tbody');
+    types.forEach((t) => {
+      tbody.appendChild(
+        el(
+          'tr',
+          {},
+          el('td', {}, t.label),
+          el('td', {}, t.code),
+          el(
+            'td',
+            {},
+            el(
+              'button',
+              {
+                class: 'btn small danger',
+                onclick: async () => {
+                  if (!confirm(`Supprimer le type "${t.label}" ?`)) return;
+                  try {
+                    await deleteCardType(t.code);
+                    await loadCardTypes();
+                    await loadTypesList();
+                  } catch (e) {
+                    if (e && e.status === 409) alert('Impossible: ce type est utilisé par au moins une demande.');
+                    else alert('Suppression impossible.');
+                  }
+                },
+              },
+              'Supprimer'
+            )
+          )
+        )
+      );
+    });
+    table.appendChild(tbody);
+    container.appendChild(table);
+  } catch {}
+}
+
 async function addUser(formData) {
   const created = await fetchJSON('/api/auth/register', { method: 'POST', body: JSON.stringify(formData) });
   try {
@@ -371,7 +427,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     const label = new FormData(formEl).get('label');
     try {
       await addCardType(label);
-      formEl.reset();
+      // Recharger entièrement la page pour refléter l'ajout
+      window.location.reload();
     } catch (err) {
       alert("Impossible d'ajouter le type: " + (err.message || ''));
     }
@@ -409,5 +466,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     } catch {}
   }
   renderAuth();
-  if (window.currentUser && window.currentUser.role === 'admin') await loadUsers();
+  if (window.currentUser && window.currentUser.role === 'admin') {
+    await loadUsers();
+    await loadTypesList();
+  }
 });
