@@ -10,16 +10,16 @@ Application web simple pour gérer des demandes de cartes: soumission par formul
 
 ## ✨ Fonctionnalités
 
-- Soumission d'une demande (nom, email, type, détails optionnels)
-- Liste des demandes avec statut
-- Statuts: `Demandé`, `En cours d'impression`, `Disponible`
+- Demandes de cartes: création (nom, email, type, détails), liste, suppression (propriétaire/admin)
+- Statuts: `Demandé`, `En cours d'impression` (`impression`), `Disponible` (admin et rôle appel peuvent changer le statut)
 - Types de carte personnalisables (défaut: Etudiants, Enseignants, Personnels)
-- Frontend statique minimal embarqué
-- Authentification JWT et rôles: Administrateur (gère demandes + comptes) et Demandeur (crée/voit ses demandes)
- - Authentification JWT et rôles: multiples rôles possibles (ex: `admin`, `requester`, `announcer`).
-   - `admin`: tout gérer (demandes, types, utilisateurs, appels)
-   - `requester`: créer/voir ses demandes, appels
-   - `announcer`: ne voit que la fonctionnalité d'appels
+- Appels de personnes: création, liste et suppression (authentifié)
+- Écran d'affichage public: cartes disponibles + appels en cours (`/display.html`)
+- Ajustement auto de l'affichage: la page se met à l’échelle pour afficher toutes les cartes
+- Authentification JWT et rôles:
+  - `admin`: tout gérer (demandes, statuts, types, utilisateurs, appels)
+  - `requester`: créer/voir ses demandes, créer/lister/supprimer des appels
+  - `appel`: gérer les statuts et les appels, mais ne peut pas créer/voir la liste des demandes
 
 ## 🧱 Pile technique
 
@@ -32,12 +32,16 @@ Application web simple pour gérer des demandes de cartes: soumission par formul
 - `src/services/db.js`: accès au stockage JSON (CRUD minimal)
 - `src/services/users.js`: utilisateurs (hashage mot de passe, rôles)
 - `src/services/cardTypes.js`: types de cartes (liste + ajout custom)
+- `src/services/calls.js`: appels (CRUD fichier JSON)
 - `src/services/auth.js`: JWT + bcrypt
 - `src/routes/requests.js`: routes API REST `/api/requests`
 - `src/routes/auth.js`: login, register (admin), me
 - `src/routes/users.js`: gestion utilisateurs (admin)
 - `src/routes/cardTypes.js`: gestion types de cartes
+- `src/routes/calls.js`: API des appels `/api/calls`
+- `src/routes/public.js`: endpoints publics (`/public/available-requests`, `/public/calls`)
 - `src/public/`: frontend statique (formulaire + liste)
+- `src/public/display.html` + `display.js`: écran d'affichage public (cartes dispo + appels), autoscale
 - `src/server.js`: composition de l'app Express
 
 ## ✅ Prérequis
@@ -63,8 +67,8 @@ npm start
 3) Ouvrir l'application
 
 - Frontend: http://localhost:3000/
-- API: http://localhost:3000/api/requests
- - Page publique (sans auth): http://localhost:3000/display.html (cartes disponibles)
+- API demandes: http://localhost:3000/api/requests
+- Écran public (sans auth): http://localhost:3000/display.html (cartes disponibles + appels)
 
 ## 🐳 Démarrage via Docker
 
@@ -112,12 +116,21 @@ Le conteneur expose un healthcheck sur `/health`. Vous pouvez vérifier l'état 
 - `DELETE /api/users/:id` (admin) → supprimer
 - `GET /api/card-types` → liste des types
 - `POST /api/card-types` (admin) → ajouter `{ label, code? }`
-- `GET /api/requests` (auth) → liste des demandes (admin: toutes, demandeur: les siennes)
-- `GET /api/requests/:id` (auth) → détail (restreint au propriétaire sauf admin)
-- `POST /api/requests` (auth) → créer `{ applicantName, email, cardType, details? }`
-- `PATCH /api/requests/:id/status` (admin) → `{ status: 'demande'|'impression'|'disponible' }`
+- `GET /api/requests` (auth) → liste des demandes (admin/appel: toutes; requester: ses demandes)
+- `GET /api/requests/:id` (auth) → détail (admin/appel: accès; sinon propriétaire)
+- `POST /api/requests` (auth) → créer `{ applicantName, email, cardType, details? }` (rôle `appel` interdit → 403)
+- `PATCH /api/requests/:id/status` (admin/appel) → `{ status: 'demande'|'impression'|'disponible' }`
 - `DELETE /api/requests/:id` (auth, owner ou admin) → suppression de la demande
 - `GET /public/available-requests` (public) → demandes avec statut disponible
+
+Appels de personnes:
+- `GET /api/calls` (auth) → liste des appels
+- `POST /api/calls` (auth) → créer `{ name, location }`
+- `DELETE /api/calls/:id` (auth) → suppression par tout utilisateur authentifié
+- `GET /public/calls` (public) → liste des appels (affichage)
+
+Affichage:
+- `GET /display.html` → affiche les cartes disponibles et les appels, mise à l’échelle automatique
 
 ## 🧪 Tests
 
