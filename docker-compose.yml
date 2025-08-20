@@ -7,7 +7,9 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=production
+      - JWT_SECRET=change-me-in-prod
+      - ADMIN_DEFAULT_EMAIL=admin@example.com
+      - ADMIN_DEFAULT_PASSWORD=admin123
     volumes:
       - ./data:/app/data
     restart: unless-stopped
-

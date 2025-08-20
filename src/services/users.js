@@ -16,22 +16,30 @@ async function ensureStore() {
 
 async function seedAdminIfEmpty() {
   const users = await getAll();
-  if (users.length === 0) {
-    const now = new Date().toISOString();
-    const passwordHash = await hashPassword(process.env.ADMIN_DEFAULT_PASSWORD || 'admin123');
-    const admin = {
-      id: 1,
-      name: 'Admin',
-      email: process.env.ADMIN_DEFAULT_EMAIL || 'admin@example.com',
-      role: 'admin',
-      passwordHash,
-      createdAt: now,
-      updatedAt: now,
-    };
-    await writeAll([admin]);
-    return admin;
-  }
-  return null;
+  // If there is at least one admin, nothing to do
+  const hasAdmin = users.some((u) => u && u.role === 'admin');
+  if (hasAdmin) return null;
+  const now = new Date().toISOString();
+  const emailEnv = process.env.ADMIN_DEFAULT_EMAIL || 'admin@example.com';
+  const baseEmail = String(emailEnv).toLowerCase();
+  let seedEmail = baseEmail;
+  // Ensure email uniqueness
+  const existsEmail = users.find((u) => (u.email || '').toLowerCase() === seedEmail);
+  if (existsEmail) seedEmail = `admin+seed-${Date.now()}@example.com`;
+  const nextId = users.length ? Math.max(...users.map((x) => x.id || 0)) + 1 : 1;
+  const passwordHash = await hashPassword(process.env.ADMIN_DEFAULT_PASSWORD || 'admin123');
+  const admin = {
+    id: nextId,
+    name: 'Admin',
+    email: seedEmail,
+    role: 'admin',
+    passwordHash,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const newList = users.concat(admin);
+  await writeAll(newList);
+  return admin;
 }
 
 async function readAll() {

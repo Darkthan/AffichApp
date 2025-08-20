@@ -87,6 +87,11 @@ Notes:
 - Les données sont persistées sur votre hôte dans `./data` via un volume.
 - Pour arrêter: `docker compose down` (ajoutez `-v` pour supprimer le volume si besoin).
 
+Astuce (compte admin par défaut):
+- Par défaut, un admin est créé si aucun administrateur n'existe encore.
+- Identifiants par défaut configurables via variables d'environnement: `ADMIN_DEFAULT_EMAIL`, `ADMIN_DEFAULT_PASSWORD`.
+- Si vous avez déjà un dossier `./data` avec des utilisateurs, l’admin par défaut ne sera pas recréé. Supprimez `./data/users.json` (ou `docker compose down -v`) pour repartir à zéro.
+
 ### Scripts npm (raccourcis)
 
 Si Docker est installé, vous pouvez utiliser les scripts:
