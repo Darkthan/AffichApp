@@ -211,32 +211,57 @@ function renderAuth() {
   const userInfo = document.getElementById('user-info');
   const loginLink = document.getElementById('login-link');
   const adminPanel = document.getElementById('admin-panel');
+  const requestSection = document.getElementById('request-section');
+  const requestsListSection = document.getElementById('requests-list-section');
   const requestForm = document.getElementById('request-form');
+  const callForm = document.getElementById('call-form');
   const isAuth = !!window.currentUser;
   if (isAuth) {
     if (loginLink) loginLink.classList.add('hidden');
     userInfo.classList.remove('hidden');
     userInfo.removeAttribute('hidden');
     document.getElementById('user-name').textContent = window.currentUser.name || window.currentUser.email;
-    document.getElementById('user-role').textContent = window.currentUser.role === 'admin' ? 'Administrateur' : 'Demandeur';
+    document.getElementById('user-role').textContent = window.currentUser.role === 'admin' ? 'Administrateur' : window.currentUser.role === 'appel' ? 'Appel' : 'Demandeur';
     if (window.currentUser.role === 'admin') { adminPanel.classList.remove('hidden'); adminPanel.removeAttribute('hidden'); } else { adminPanel.classList.add('hidden'); adminPanel.setAttribute('hidden',''); }
-    requestForm.classList.remove('hidden');
-    requestForm.removeAttribute('hidden');
+    // Le rôle 'appel' ne voit ni la soumission ni la liste des demandes
+    if (window.currentUser.role === 'appel') {
+      if (requestSection) { requestSection.classList.add('hidden'); requestSection.setAttribute('hidden',''); }
+      if (requestsListSection) { requestsListSection.classList.add('hidden'); requestsListSection.setAttribute('hidden',''); }
+      if (requestForm) { requestForm.classList.add('hidden'); requestForm.setAttribute('hidden',''); }
+    } else {
+      if (requestSection) { requestSection.classList.remove('hidden'); requestSection.removeAttribute('hidden'); }
+      if (requestsListSection) { requestsListSection.classList.remove('hidden'); requestsListSection.removeAttribute('hidden'); }
+      if (requestForm) { requestForm.classList.remove('hidden'); requestForm.removeAttribute('hidden'); }
+    }
+    if (callForm) { callForm.classList.remove('hidden'); callForm.removeAttribute('hidden'); }
   } else {
     if (loginLink) loginLink.classList.remove('hidden');
     userInfo.classList.add('hidden');
     userInfo.setAttribute('hidden','');
     adminPanel.classList.add('hidden');
     adminPanel.setAttribute('hidden','');
-    requestForm.classList.add('hidden');
-    requestForm.setAttribute('hidden','');
+    if (requestSection) { requestSection.classList.add('hidden'); requestSection.setAttribute('hidden',''); }
+    if (requestsListSection) { requestsListSection.classList.add('hidden'); requestsListSection.setAttribute('hidden',''); }
+    if (requestForm) { requestForm.classList.add('hidden'); requestForm.setAttribute('hidden',''); }
+    if (callForm) { callForm.classList.add('hidden'); callForm.setAttribute('hidden',''); }
   }
   refreshUI();
 }
 
 async function refreshUI() {
   await loadCardTypes();
-  if (window.currentUser) await loadList(); else document.getElementById('list').innerHTML = '<p class="muted">Connectez-vous pour voir vos demandes</p>';
+  if (window.currentUser) {
+    if (window.currentUser.role !== 'appel') {
+      await loadList();
+    } else {
+      const listEl = document.getElementById('list');
+      if (listEl) listEl.innerHTML = '';
+    }
+    await loadCalls();
+  } else {
+    document.getElementById('list').innerHTML = '<p class="muted">Connectez-vous pour voir vos demandes</p>';
+    document.getElementById('calls-list').innerHTML = '<p class="muted">Connectez-vous pour voir les appels</p>';
+  }
 }
 
 async function loadCardTypes() {
@@ -343,10 +368,11 @@ async function loadUsers() {
             el(
               'button',
               {
+                class: 'btn',
                 onclick: async () => {
                   const name = prompt('Nom', u.name) ?? u.name;
                   const email = prompt('Email', u.email) ?? u.email;
-                  const role = prompt("Role ('admin' ou 'requester')", u.role) ?? u.role;
+                  const role = prompt("Role ('admin', 'requester' ou 'appel')", u.role) ?? u.role;
                   const password = prompt('Nouveau mot de passe (laisser vide pour ne pas changer)', '');
                   try {
                     await fetchJSON(`/api/users/${u.id}`, {
@@ -365,6 +391,7 @@ async function loadUsers() {
             el(
               'button',
               {
+                class: 'btn danger',
                 onclick: async () => {
                   if (!confirm('Supprimer cet utilisateur ?')) return;
                   try {
@@ -421,6 +448,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   });*/
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) logoutBtn.addEventListener('click', () => logout());
+  const callForm = document.getElementById('call-form');
+  if (callForm) callForm.addEventListener('submit', onCallSubmit);
   document.getElementById('add-type-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formEl = e.currentTarget;
@@ -470,4 +499,66 @@ window.addEventListener('DOMContentLoaded', async () => {
     await loadUsers();
     await loadTypesList();
   }
+  // initial load of calls if authenticated
+  if (window.currentUser) await loadCalls();
 });
+
+// --- Calls (appels) ---
+async function createCall(data) {
+  return fetchJSON('/api/calls', { method: 'POST', body: JSON.stringify(data) });
+}
+
+async function deleteCall(id) {
+  const res = await fetch(`/api/calls/${id}`, { method: 'DELETE', headers: authHeaders() });
+  if (!res.ok) throw new Error('Delete failed');
+}
+
+function renderCalls(items) {
+  const container = document.getElementById('calls-list');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!items.length) { container.appendChild(el('p', { class: 'muted' }, 'Aucun appel pour le moment.')); return; }
+  const table = el('table', { class: 'table' });
+  table.appendChild(el('thead', {}, el('tr', {}, el('th', {}, 'Nom'), el('th', {}, "Lieu de l'appel"), el('th', {}, 'Créé le'), el('th', {}, 'Par'), el('th', {}, 'Actions'))));
+  const tbody = el('tbody');
+  const user = window.currentUser || {};
+  items.forEach((c) => {
+    const canDelete = true; // suppression autorisée pour tout rôle authentifié
+    tbody.appendChild(el('tr', {},
+      el('td', {}, c.name),
+      el('td', {}, c.location),
+      el('td', {}, new Date(c.createdAt).toLocaleString()),
+      el('td', {}, c.createdByName || '—'),
+      el('td', {}, canDelete ? el('button', { class: 'btn small danger', onclick: async () => { if (!confirm('Supprimer cet appel ?')) return; try { await deleteCall(c.id); await loadCalls(); } catch { alert('Suppression impossible'); } } }, 'Supprimer') : el('span', { class: 'muted' }, '—'))
+    ));
+  });
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+
+async function loadCalls() {
+  try {
+    const items = await fetchJSON('/api/calls');
+    renderCalls(items);
+  } catch (e) { console.warn('Failed to load calls', e); }
+}
+
+async function onCallSubmit(e) {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const msg = document.getElementById('call-msg');
+  if (msg) { msg.textContent = ''; msg.className = 'msg'; }
+  const fd = new FormData(form);
+  const name = (fd.get('name') || '').toString().trim();
+  const location = (fd.get('location') || '').toString().trim();
+  if (!name || !location) { if (msg) { msg.textContent = 'Nom et lieu requis.'; msg.className = 'msg error'; } return; }
+  try {
+    await createCall({ name, location });
+    form.reset();
+    if (msg) { msg.textContent = 'Appel ajouté ✔'; msg.className = 'msg success'; }
+    await loadCalls();
+  } catch (err) {
+    const reason = err && (err.message || (err.data && err.data.error)) ? ': ' + (err.message || err.data.error) : '';
+    if (msg) { msg.textContent = "Impossible d'ajouter l'appel" + reason; msg.className = 'msg error'; }
+  }
+}

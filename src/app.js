@@ -6,6 +6,7 @@ const { router: authRouter } = require('./routes/auth');
 const { router: usersRouter } = require('./routes/users');
 const { router: cardTypesRouter } = require('./routes/cardTypes');
 const { router: publicRouter } = require('./routes/public');
+const { router: callsRouter } = require('./routes/calls');
 
 function createApp() {
   const app = express();
@@ -19,6 +20,7 @@ function createApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/card-types', cardTypesRouter);
+  app.use('/api/calls', callsRouter);
   app.use('/public', publicRouter);
 
   app.get('/health', (req, res) => {

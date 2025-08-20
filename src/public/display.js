@@ -14,6 +14,11 @@ function el(tag, attrs = {}, ...children) {
   return e;
 }
 
+function getRandomColorClass() {
+  const colors = ['bg-color-1', 'bg-color-2', 'bg-color-3', 'bg-color-4'];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
 function formatDate(iso) {
   try {
     const d = new Date(iso);
@@ -33,7 +38,7 @@ async function loadAvailable() {
         container.appendChild(
           el(
             'div',
-            { class: 'card-item' },
+            { class: `card-item ${getRandomColorClass()}` },
             el('div', { class: 'name' }, x.applicantName),
             el('div', { class: 'muted' }, `Type: ${x.cardTypeLabel}`),
             el('div', { class: 'timestamp' }, `Depuis: ${formatDate(x.availableSince)}`)
@@ -48,6 +53,33 @@ async function loadAvailable() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  loadAvailable();
-  setInterval(loadAvailable, 15000); // rafraîchit toutes les 15s
+  loadAll();
+  setInterval(loadAll, 15000); // rafraîchit toutes les 15s
 });
+
+async function loadCalls() {
+  try {
+    const items = await fetchJSON('/public/calls');
+    const container = document.getElementById('calls-list');
+    container.innerHTML = '';
+    if (!items.length) {
+      container.appendChild(el('div', { class: 'muted' }, 'Aucun appel en cours.'));
+    } else {
+      items.forEach((x) => {
+        container.appendChild(
+          el(
+            'div',
+            { class: `card-item ${getRandomColorClass()}` },
+            el('div', { class: 'name' }, x.name),
+            el('div', { class: 'location' }, `📍 ${x.location}`),
+            el('div', { class: 'timestamp' }, `Depuis: ${formatDate(x.createdAt)}`)
+          )
+        );
+      });
+    }
+  } catch (e) { console.error(e); }
+}
+
+async function loadAll() {
+  await Promise.all([loadAvailable(), loadCalls()]);
+}

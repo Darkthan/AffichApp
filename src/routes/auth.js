@@ -24,7 +24,7 @@ router.post('/register', requireAuth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
   const { name, email, role, password } = req.body || {};
   if (!name || !email || !role || !password) return res.status(400).json({ error: 'Missing fields' });
-  if (!['admin', 'requester'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
+  if (!['admin', 'requester', 'appel'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
   try {
     const user = await create({ name, email, role, password });
     res.status(201).json(user);

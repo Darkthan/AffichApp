@@ -1,6 +1,7 @@
 const express = require('express');
 const { db } = require('../services/db');
 const { getAll: getTypes } = require('../services/cardTypes');
+const calls = require('../services/calls');
 
 const router = express.Router();
 
@@ -25,3 +26,15 @@ router.get('/available-requests', async (req, res, next) => {
 });
 
 module.exports = { router };
+
+// Public endpoint for ongoing calls
+router.get('/calls', async (req, res, next) => {
+  try {
+    const items = await calls.getAll();
+    // Keep only required fields for display
+    const safe = items.map((x) => ({ id: x.id, name: x.name, location: x.location, createdAt: x.createdAt }));
+    res.json(safe);
+  } catch (err) {
+    next(err);
+  }
+});

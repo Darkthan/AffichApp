@@ -24,7 +24,7 @@ router.patch('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
   const { name, email, role, password } = req.body || {};
-  if (role && !['admin', 'requester'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
+  if (role && !['admin', 'requester', 'appel'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
   try {
     const user = await update(id, { name, email, role, password });
     if (!user) return res.status(404).json({ error: 'Not found' });

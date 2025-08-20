@@ -19,8 +19,27 @@
           <p class="muted small">Admin par défaut: admin@example.com / admin123 (à changer)</p>
         </div>
       </header>
-      <h1>Cartes à récupérer</h1>
+      <h1>Gestion des panneaux d'affichage</h1>
       <section class="card">
+        <h2>Appels de personnes</h2>
+        <form id="call-form" class="requires-auth hidden" hidden>
+          <div class="grid">
+            <label>
+              Nom de la personne
+              <input type="text" name="name" placeholder="Nom à appeler" required />
+            </label>
+            <label>
+              Lieu de l'appel
+              <input type="text" name="location" placeholder="Ex: Accueil Bât. A" required />
+            </label>
+          </div>
+          <button type="submit">Ajouter l'appel</button>
+          <p id="call-msg" class="msg"></p>
+        </form>
+        <div id="calls-list"></div>
+      </section>
+
+      <section class="card" id="request-section">
         <h2>Soumettre une demande</h2>
         <form id="request-form" class="requires-auth hidden" hidden>
           <div class="grid">
@@ -48,7 +67,7 @@
         </form>
       </section>
 
-      <section class="card">
+      <section class="card" id="requests-list-section">
         <h2>Liste des demandes</h2>
         <div id="list"></div>
       </section>
@@ -69,6 +88,7 @@
           <select name="role" required>
             <option value="requester">Demandeur</option>
             <option value="admin">Administrateur</option>
+            <option value="appel">Appel</option>
           </select>
           <input type="password" name="password" placeholder="Mot de passe" required />
           <button type="submit">Créer l'utilisateur</button>
