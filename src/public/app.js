@@ -351,63 +351,112 @@ async function loadUsers() {
     const container = document.getElementById('users-list');
     container.innerHTML = '';
     const table = el('table', { class: 'table' });
-    table.appendChild(el('thead', {}, el('tr', {}, el('th', {}, 'ID'), el('th', {}, 'Nom'), el('th', {}, 'Email'), el('th', {}, 'Role'), el('th', {}, 'Actions'))));
-    const tbody = el('tbody');
-    users.forEach((u) =>
-      tbody.appendChild(
-        el(
-          'tr',
-          {},
-          el('td', {}, String(u.id)),
-          el('td', {}, u.name),
-          el('td', {}, u.email),
-          el('td', {}, u.role),
-          el(
-            'td',
-            {},
-            el(
-              'button',
-              {
-                class: 'btn',
-                onclick: async () => {
-                  const name = prompt('Nom', u.name) ?? u.name;
-                  const email = prompt('Email', u.email) ?? u.email;
-                  const role = prompt("Role ('admin', 'requester' ou 'appel')", u.role) ?? u.role;
-                  const password = prompt('Nouveau mot de passe (laisser vide pour ne pas changer)', '');
-                  try {
-                    await fetchJSON(`/api/users/${u.id}`, {
-                      method: 'PATCH',
-                      body: JSON.stringify({ name, email, role, password }),
-                    });
-                    await loadUsers();
-                  } catch {
-                    alert("Echec de la mise à jour de l'utilisateur");
-                  }
-                },
-              },
-              'Modifier'
-            ),
-            ' ',
-            el(
-              'button',
-              {
-                class: 'btn danger',
-                onclick: async () => {
-                  if (!confirm('Supprimer cet utilisateur ?')) return;
-                  try {
-                    await fetch(`/api/users/${u.id}`, { method: 'DELETE', headers: authHeaders() });
-                    await loadUsers();
-                  } catch {
-                    alert("Echec de la suppression de l'utilisateur");
-                  }
-                },
-              },
-              'Supprimer'
-            )
-          )
-        )
-      )
+    table.appendChild(
+      el('thead', {}, el('tr', {}, el('th', {}, 'ID'), el('th', {}, 'Nom'), el('th', {}, 'Email'), el('th', {}, 'Role'), el('th', {}, 'Actions')))
     );
+    const tbody = el('tbody');
+
+    function buildRow(user, editing = false) {
+      const row = el('tr');
+      const idTd = el('td', {}, String(user.id));
+      const nameTd = el('td');
+      const emailTd = el('td');
+      const roleTd = el('td');
+      const actionsTd = el('td');
+
+      if (!editing) {
+        nameTd.textContent = user.name;
+        emailTd.textContent = user.email;
+        roleTd.textContent = user.role;
+        actionsTd.append(
+          el(
+            'button',
+            {
+              class: 'btn',
+              onclick: () => {
+                row.replaceWith(buildRow(user, true));
+              },
+            },
+            'Modifier'
+          ),
+          ' ',
+          el(
+            'button',
+            {
+              class: 'btn danger',
+              onclick: async () => {
+                if (!confirm('Supprimer cet utilisateur ?')) return;
+                try {
+                  await fetch(`/api/users/${user.id}`, { method: 'DELETE', headers: authHeaders() });
+                  await loadUsers();
+                } catch {
+                  alert("Echec de la suppression de l'utilisateur");
+                }
+              },
+            },
+            'Supprimer'
+          )
+        );
+      } else {
+        const nameInput = el('input', { type: 'text', value: user.name });
+        const emailInput = el('input', { type: 'email', value: user.email });
+        const roleSelect = el(
+          'select',
+          {},
+          el('option', { value: 'requester' }, 'Demandeur'),
+          el('option', { value: 'admin' }, 'Administrateur'),
+          el('option', { value: 'appel' }, 'Appel')
+        );
+        roleSelect.value = user.role;
+        nameTd.append(nameInput);
+        emailTd.append(emailInput);
+        roleTd.append(roleSelect);
+
+        const pwdInput = el('input', { type: 'password', placeholder: 'Nouveau mot de passe (optionnel)' });
+        actionsTd.append(
+          pwdInput,
+          ' ',
+          el(
+            'button',
+            {
+              class: 'btn small',
+              onclick: async () => {
+                try {
+                  const name = nameInput.value.trim();
+                  const email = emailInput.value.trim();
+                  const role = roleSelect.value;
+                  const password = pwdInput.value || '';
+                  await fetchJSON(`/api/users/${user.id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ name, email, role, password }),
+                  });
+                  await loadUsers();
+                } catch {
+                  alert("Echec de la mise à jour de l'utilisateur");
+                }
+              },
+            },
+            'Enregistrer'
+          ),
+          ' ',
+          el(
+            'button',
+            {
+              class: 'btn small',
+              onclick: () => {
+                row.replaceWith(buildRow(user, false));
+              },
+            },
+            'Annuler'
+          )
+        );
+      }
+
+      row.append(idTd, nameTd, emailTd, roleTd, actionsTd);
+      return row;
+    }
+
+    users.forEach((u) => tbody.appendChild(buildRow(u, false)));
     table.appendChild(tbody);
     container.appendChild(table);
   } catch {}
