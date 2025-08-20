@@ -362,7 +362,7 @@ async function loadUsers() {
       const nameTd = el('td');
       const emailTd = el('td');
       const roleTd = el('td');
-      const actionsTd = el('td');
+      const actionsTd = el('td', { class: 'user-actions-cell' });
 
       if (!editing) {
         nameTd.textContent = user.name;
@@ -412,7 +412,7 @@ async function loadUsers() {
         emailTd.append(emailInput);
         roleTd.append(roleSelect);
 
-        const pwdInput = el('input', { type: 'password', placeholder: 'Nouveau mot de passe (optionnel)' });
+        const pwdInput = el('input', { type: 'password', placeholder: 'Nouveau mot de passe (optionnel)', class: 'user-pwd-input' });
         actionsTd.append(
           pwdInput,
           ' ',

@@ -35,3 +35,5 @@ th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left
 th { color: var(--muted); font-weight: 600; }
 .hidden { display: none; }
 .inline { display: flex; gap: 8px; flex-wrap: wrap; }
+.user-actions-cell { display: flex; align-items: center; gap: 10px; min-width: 420px; }
+.user-actions-cell .user-pwd-input { min-width: 240px; }
