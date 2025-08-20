@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cartes disponibles à l'accueil</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { 
+        background: #0b1220; 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: white;
+        overflow: hidden;
+      }
+      .screen { 
+        max-width: 1400px; 
+        margin: 0 auto; 
+        padding: 24px; 
+        transform-origin: top left; 
+      }
+      .title { 
+        font-size: 2.6rem; 
+        font-weight: 800; 
+        margin: 12px 0 24px; 
+        text-align: center;
+      }
+      .grid-cards { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); 
+        gap: 22px; 
+        margin-bottom: 32px;
+      }
+      .card-item { 
+        background: #111827; 
+        border: 1px solid #1f2937; 
+        border-radius: 16px; 
+        padding: 24px; 
+        box-shadow: 0 10px 24px rgba(0,0,0,0.30); 
+        transition: transform 0.2s ease;
+      }
+      .card-item:hover { 
+        transform: translateY(-2px); 
+      }
+      .bg-color-1 { background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%); }
+      .bg-color-2 { background: linear-gradient(135deg, #7c2d12 0%, #991b1b 100%); }
+      .bg-color-3 { background: linear-gradient(135deg, #164e63 0%, #0f766e 100%); }
+      .bg-color-4 { background: linear-gradient(135deg, #365314 0%, #166534 100%); }
+      .name { 
+        font-size: 2.2rem; 
+        line-height: 1.2; 
+        font-weight: 800; 
+        margin-bottom: 10px; 
+        letter-spacing: .2px; 
+        word-break: break-word; 
+        color: white; 
+      }
+      .muted { 
+        color: #d1d5db; 
+        font-size: 1.05rem; 
+      }
+      .timestamp { 
+        font-size: 1rem; 
+        color: #d1d5db; 
+        margin-top: 6px; 
+      }
+      .location { 
+        font-size: 1.4rem; 
+        font-weight: 600; 
+        color: white; 
+        margin-bottom: 8px; 
+      }
+      .no-items {
+        text-align: center;
+        color: #9ca3af;
+        font-size: 1.2rem;
+        font-style: italic;
+        padding: 40px;
+      }
+      .footer {
+        position: fixed;
+        bottom: 10px;
+        right: 20px;
+        color: #6b7280;
+        font-size: 0.9rem;
+      }
+      .status-indicator {
+        position: fixed;
+        top: 10px;
+        right: 20px;
+        background: #10b981;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="screen">
+      <div class="title">🎫 Cartes disponibles à l'accueil</div>
+      <div class="grid-cards">
+        <!-- AVAILABLE_CARDS_PLACEHOLDER -->
+      </div>
+      
+      <div class="title">📞 Appels en cours</div>
+      <div class="grid-cards">
+        <!-- CALLS_PLACEHOLDER -->
+      </div>
+    </div>
+    <div class="footer">
+      Dernière mise à jour: <!-- TIMESTAMP_PLACEHOLDER -->
+    </div>
+  </body>
+</html>
