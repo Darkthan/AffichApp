@@ -41,6 +41,12 @@ function createApp() {
   // Ensure data directory exists at startup
   const dataDir = path.join(process.cwd(), 'data');
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  try {
+    fs.accessSync(dataDir, fs.constants.R_OK | fs.constants.W_OK);
+  } catch (e) {
+    console.warn('[startup] Data dir not writable:', dataDir, e && e.message ? e.message : e);
+  }
+  console.log('[startup] Data directory:', dataDir);
 
   return app;
 }
