@@ -2,7 +2,8 @@ version: "3.8"
 services:
   app:
     build: .
-    user: "0:0"
+    # l'image doit préparer /app/data pour l'user
+    user: "1000:1000"
     ports:
       - "3000:3000"
     environment:
@@ -12,5 +13,8 @@ services:
       - ADMIN_DEFAULT_EMAIL=admin@example.com
       - ADMIN_DEFAULT_PASSWORD=admin123
     volumes:
-      - ./data:/app/data
+      - app_data:/app/data
     restart: unless-stopped
+
+volumes:
+  app_data:
