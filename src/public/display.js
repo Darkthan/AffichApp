@@ -55,6 +55,11 @@ async function loadAvailable() {
 window.addEventListener('DOMContentLoaded', () => {
   loadAll();
   setInterval(loadAll, 15000); // rafraîchit toutes les 15s
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(adjustScaleToViewport, 100);
+  });
 });
 
 async function loadCalls() {
@@ -82,4 +87,23 @@ async function loadCalls() {
 
 async function loadAll() {
   await Promise.all([loadAvailable(), loadCalls()]);
+  // Ajuste l'échelle pour tenir dans la hauteur de l'écran
+  adjustScaleToViewport();
+}
+
+function adjustScaleToViewport() {
+  const container = document.querySelector('.screen');
+  if (!container) return;
+  // Reset any previous transform before measuring
+  container.style.transform = '';
+  container.style.width = '';
+  container.style.transformOrigin = 'top left';
+  const fullHeight = document.documentElement.scrollHeight;
+  const viewport = window.innerHeight || document.documentElement.clientHeight;
+  const scale = Math.min(1, viewport / (fullHeight || 1));
+  if (scale < 1) {
+    container.style.transform = `scale(${scale})`;
+    // Expand width to compensate for scaling to avoid horizontal clipping
+    container.style.width = `${100 / scale}%`;
+  }
 }

@@ -442,7 +442,7 @@ async function loadUsers() {
           el(
             'button',
             {
-              class: 'btn small',
+              class: 'btn small danger',
               onclick: () => {
                 row.replaceWith(buildRow(user, false));
               },
