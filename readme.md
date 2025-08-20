@@ -194,3 +194,25 @@ ApplicationDemandesCartes/
 
 - Équipe: à compléter
 - Email: à compléter
+
+## 🏷️ Versionning
+
+- Branche par défaut: `main`
+- Version actuelle: `v1.0` (les versions antérieures sont considérées comme la série `v0`)
+- Tags Git: utiliser des tags annotés pour marquer les versions.
+
+Exemples:
+
+```bash
+# Taguer la version courante
+git tag -a v1.0 -m "Version 1.0"
+
+# Pousser la branche principale et les tags
+git push origin main --tags
+```
+
+## 🐙 GitHub
+
+- Dépôt: hébergez ce projet sur GitHub et utilisez la branche `main`.
+- CI (optionnel): placez vos workflows dans `.github/workflows/` (ex: lint, tests, build Docker).
+- Releases: créez une Release GitHub à partir du tag `v1.0` pour distribuer/archiver une version.
