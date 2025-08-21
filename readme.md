@@ -70,6 +70,11 @@ npm start
 - API demandes: http://localhost:3000/api/requests
 - Écran public (sans auth): http://localhost:3000/display.html (cartes disponibles + appels)
 
+Identifiants administrateur (par défaut)
+- Par défaut, un compte administrateur est créé si aucun admin n'existe encore.
+- Email/Mot de passe configurables via variables d'environnement: `ADMIN_DEFAULT_EMAIL`, `ADMIN_DEFAULT_PASSWORD`.
+- Valeurs par défaut (dev): `admin@example.com` / `admin123`. Pensez à les changer.
+
 ## 🐳 Démarrage via Docker
 
 1) Builder et lancer avec Compose
@@ -89,7 +94,7 @@ Notes:
 
 Astuce (compte admin par défaut):
 - Par défaut, un admin est créé si aucun administrateur n'existe encore.
-- Identifiants par défaut configurables via variables d'environnement: `ADMIN_DEFAULT_EMAIL`, `ADMIN_DEFAULT_PASSWORD`.
+- Identifiants par défaut configurables via variables d'environnement: `ADMIN_DEFAULT_EMAIL`, `ADMIN_DEFAULT_PASSWORD` (défaut dev: `admin@example.com` / `admin123`).
 - Si vous avez déjà un dossier `./data` avec des utilisateurs, l’admin par défaut ne sera pas recréé. Supprimez `./data/users.json` (ou `docker compose down -v`) pour repartir à zéro.
 
 ### Scripts npm (raccourcis)
