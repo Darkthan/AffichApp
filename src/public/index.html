@@ -17,6 +17,12 @@
             <button id="logout-btn" type="button">Se déconnecter</button>
           </div>
           <p class="muted small">Admin par défaut: admin@example.com / admin123 (à changer)</p>
+          <form id="password-form" class="grid hidden" hidden style="margin-top: 10px;">
+            <input type="password" name="pwd1" placeholder="Nouveau mot de passe" required />
+            <input type="password" name="pwd2" placeholder="Confirmer le mot de passe" required />
+            <button type="submit">Mettre à jour le mot de passe</button>
+            <p id="password-msg" class="msg"></p>
+          </form>
         </div>
       </header>
       <h1>Gestion des écrans d'affichage</h1>

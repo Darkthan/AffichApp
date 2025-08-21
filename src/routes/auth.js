@@ -39,4 +39,20 @@ router.get('/me', requireAuth, async (req, res) => {
   res.json({ user: req.user });
 });
 
+// PATCH /api/auth/me/password — change own password
+router.patch('/me/password', requireAuth, async (req, res) => {
+  const { password, confirm } = req.body || {};
+  const pwd = typeof password === 'string' ? password : '';
+  const cfm = typeof confirm === 'string' ? confirm : undefined;
+  if (!pwd || pwd.trim().length < 4) return res.status(400).json({ error: 'Password too short' });
+  if (cfm != null && cfm !== pwd) return res.status(400).json({ error: 'Passwords do not match' });
+  try {
+    const updated = await require('../services/users').update(req.user.id, { password: pwd });
+    if (!updated) return res.status(404).json({ error: 'User not found' });
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 module.exports = { router };

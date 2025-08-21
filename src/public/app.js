@@ -214,6 +214,7 @@ function renderAuth() {
   const requestSection = document.getElementById('request-section');
   const requestsListSection = document.getElementById('requests-list-section');
   const requestForm = document.getElementById('request-form');
+  const passwordForm = document.getElementById('password-form');
   const callForm = document.getElementById('call-form');
   const isAuth = !!window.currentUser;
   if (isAuth) {
@@ -234,6 +235,7 @@ function renderAuth() {
       if (requestForm) { requestForm.classList.remove('hidden'); requestForm.removeAttribute('hidden'); }
     }
     if (callForm) { callForm.classList.remove('hidden'); callForm.removeAttribute('hidden'); }
+    if (passwordForm) { passwordForm.classList.remove('hidden'); passwordForm.removeAttribute('hidden'); }
   } else {
     if (loginLink) loginLink.classList.remove('hidden');
     userInfo.classList.add('hidden');
@@ -244,6 +246,7 @@ function renderAuth() {
     if (requestsListSection) { requestsListSection.classList.add('hidden'); requestsListSection.setAttribute('hidden',''); }
     if (requestForm) { requestForm.classList.add('hidden'); requestForm.setAttribute('hidden',''); }
     if (callForm) { callForm.classList.add('hidden'); callForm.setAttribute('hidden',''); }
+    if (passwordForm) { passwordForm.classList.add('hidden'); passwordForm.setAttribute('hidden',''); }
   }
   refreshUI();
 }
@@ -499,6 +502,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (logoutBtn) logoutBtn.addEventListener('click', () => logout());
   const callForm = document.getElementById('call-form');
   if (callForm) callForm.addEventListener('submit', onCallSubmit);
+  const passwordForm = document.getElementById('password-form');
+  if (passwordForm) passwordForm.addEventListener('submit', onPasswordSubmit);
   document.getElementById('add-type-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formEl = e.currentTarget;
@@ -609,5 +614,34 @@ async function onCallSubmit(e) {
   } catch (err) {
     const reason = err && (err.message || (err.data && err.data.error)) ? ': ' + (err.message || err.data.error) : '';
     if (msg) { msg.textContent = "Impossible d'ajouter l'appel" + reason; msg.className = 'msg error'; }
+  }
+}
+
+// --- Change own password ---
+async function changeMyPassword(password, confirm) {
+  return fetchJSON('/api/auth/me/password', {
+    method: 'PATCH',
+    body: JSON.stringify({ password, confirm }),
+  });
+}
+
+async function onPasswordSubmit(e) {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const msg = document.getElementById('password-msg');
+  if (msg) { msg.textContent = ''; msg.className = 'msg'; }
+  const fd = new FormData(form);
+  const pwd1 = String(fd.get('pwd1') || '').trim();
+  const pwd2 = String(fd.get('pwd2') || '').trim();
+  if (!pwd1 || !pwd2) { if (msg) { msg.textContent = 'Champs requis'; msg.className = 'msg error'; } return; }
+  if (pwd1 !== pwd2) { if (msg) { msg.textContent = 'Les mots de passe ne correspondent pas'; msg.className = 'msg error'; } return; }
+  if (pwd1.length < 4) { if (msg) { msg.textContent = 'Mot de passe trop court (min 4)'; msg.className = 'msg error'; } return; }
+  try {
+    await changeMyPassword(pwd1, pwd2);
+    form.reset();
+    if (msg) { msg.textContent = 'Mot de passe mis à jour ✔'; msg.className = 'msg success'; }
+  } catch (err) {
+    const reason = err && err.message ? ' (' + err.message + ')' : '';
+    if (msg) { msg.textContent = "Erreur lors de la mise à jour" + reason; msg.className = 'msg error'; }
   }
 }
