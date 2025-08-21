@@ -1,14 +1,19 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const { getByEmail, create, seedAdminIfEmpty } = require('../services/users');
 const { verifyPassword, signToken } = require('../services/auth');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Rate limiters for auth-sensitive routes
+const loginLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false });
+const passwordChangeLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false });
+
 // Ensure admin seed on startup of this router
 seedAdminIfEmpty().catch((e) => console.error('Admin seed error:', e));
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'email and password required' });
   const user = await getByEmail(email);
@@ -40,7 +45,7 @@ router.get('/me', requireAuth, async (req, res) => {
 });
 
 // PATCH /api/auth/me/password — change own password
-router.patch('/me/password', requireAuth, async (req, res) => {
+router.patch('/me/password', requireAuth, passwordChangeLimiter, async (req, res) => {
   const { password, confirm } = req.body || {};
   const pwd = typeof password === 'string' ? password : '';
   const cfm = typeof confirm === 'string' ? confirm : undefined;

@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
+const helmet = require('helmet');
 const { router: requestsRouter } = require('./routes/requests');
 const { router: authRouter } = require('./routes/auth');
 const { router: usersRouter } = require('./routes/users');
@@ -10,6 +11,9 @@ const { router: callsRouter } = require('./routes/calls');
 
 function createApp() {
   const app = express();
+
+  // Basic hardening headers (no HSTS to avoid HTTPS forcing during tests)
+  app.use(helmet({ hsts: false }));
 
   app.use(express.json({ limit: '1mb' }));
 

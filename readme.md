@@ -186,8 +186,16 @@ ApplicationDemandesCartes/
 
 ## 🔐 Sécurité
 
-- Pas de secrets stockés. Données locales en clair (`data/requests.json`).
-- Ne pas exposer tel quel en production.
+- JWT signé (expiration 7j). Ne laissez pas `JWT_SECRET` par défaut en production.
+- Mots de passe hachés (bcrypt).
+- Changement de mot de passe: endpoint protégé (JWT) + rate limiting.
+- En-têtes de sécurité via Helmet.
+- Pas de 2FA ni de critères complexes par défaut (volontairement simplifié).
+- Recommandations prod:
+  - Forcer HTTPS (proxy/ingress) et un `JWT_SECRET` robuste.
+  - Conserver le domaine en même origine pour le front et l’API.
+  - Ajuster les limites de rate limiting selon votre trafic.
+  - Restreindre l’accès public aux seules routes `/public/*` et aux assets statiques.
 
 ## 📅 Roadmap (idées)
 

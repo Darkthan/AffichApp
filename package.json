@@ -25,7 +25,9 @@
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "express": "^4.21.2",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5"
   },
   "devDependencies": {
     "eslint": "^9.6.0",
