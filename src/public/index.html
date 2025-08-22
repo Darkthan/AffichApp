@@ -80,6 +80,12 @@
 
       <section class="card hidden" id="admin-panel" hidden>
         <h2>Administration</h2>
+        <h3>Logo d'affichage</h3>
+        <form id="logo-form" class="inline" enctype="multipart/form-data">
+          <input type="file" name="logo" accept="image/png, image/jpeg, image/webp" required />
+          <button type="submit">Téléverser le logo</button>
+          <p id="logo-msg" class="msg"></p>
+        </form>
         <h3>Ajouter un type de carte</h3>
         <form id="add-type-form" class="inline">
           <input type="text" name="label" placeholder="Libellé (ex: Visiteurs)" required />

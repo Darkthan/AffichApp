@@ -502,6 +502,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (logoutBtn) logoutBtn.addEventListener('click', () => logout());
   const callForm = document.getElementById('call-form');
   if (callForm) callForm.addEventListener('submit', onCallSubmit);
+  const logoForm = document.getElementById('logo-form');
+  if (logoForm) logoForm.addEventListener('submit', onLogoSubmit);
   const passwordForm = document.getElementById('password-form');
   if (passwordForm) passwordForm.addEventListener('submit', onPasswordSubmit);
   document.getElementById('add-type-form').addEventListener('submit', async (e) => {
@@ -644,4 +646,30 @@ async function onPasswordSubmit(e) {
     const reason = err && err.message ? ' (' + err.message + ')' : '';
     if (msg) { msg.textContent = "Erreur lors de la mise à jour" + reason; msg.className = 'msg error'; }
   }
+}
+
+// --- Logo upload (admin only) ---
+async function onLogoSubmit(e) {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const msg = document.getElementById('logo-msg');
+  if (msg) { msg.textContent = ''; msg.className = 'msg'; }
+  const file = form.logo && form.logo.files && form.logo.files[0];
+  if (!file) { if (msg) { msg.textContent = 'Sélectionnez un fichier image'; msg.className = 'msg error'; } return; }
+  if (!['image/png','image/jpeg','image/webp'].includes(file.type)) {
+    if (msg) { msg.textContent = 'Type non supporté (PNG, JPEG, WEBP)'; msg.className = 'msg error'; }
+    return;
+  }
+  if (file.size > 4 * 1024 * 1024) { if (msg) { msg.textContent = 'Fichier trop volumineux (> 4MB)'; msg.className = 'msg error'; } return; }
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      await fetchJSON('/api/settings/logo', { method: 'POST', body: JSON.stringify({ data: reader.result }) });
+      if (msg) { msg.textContent = 'Logo mis à jour ✔'; msg.className = 'msg success'; }
+    } catch (err) {
+      const reason = err && err.message ? ' (' + err.message + ')' : '';
+      if (msg) { msg.textContent = 'Echec du téléversement' + reason; msg.className = 'msg error'; }
+    }
+  };
+  reader.readAsDataURL(file);
 }

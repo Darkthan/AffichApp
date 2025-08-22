@@ -7,6 +7,7 @@ const { router: authRouter } = require('./routes/auth');
 const { router: usersRouter } = require('./routes/users');
 const { router: cardTypesRouter } = require('./routes/cardTypes');
 const { router: publicRouter } = require('./routes/public');
+const { router: settingsRouter } = require('./routes/settings');
 const { router: callsRouter } = require('./routes/calls');
 
 function createApp() {
@@ -15,7 +16,7 @@ function createApp() {
   // Basic hardening headers (no HSTS to avoid HTTPS forcing during tests)
   app.use(helmet({ hsts: false }));
 
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({ limit: '5mb' }));
 
   const publicDir = path.join(__dirname, 'public');
   app.use(express.static(publicDir));
@@ -24,6 +25,7 @@ function createApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/card-types', cardTypesRouter);
+  app.use('/api/settings', settingsRouter);
   app.use('/api/calls', callsRouter);
   app.use('/public', publicRouter);
 

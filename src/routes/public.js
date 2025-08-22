@@ -4,6 +4,8 @@ const path = require('path');
 const { db } = require('../services/db');
 const { getAll: getTypes } = require('../services/cardTypes');
 const calls = require('../services/calls');
+const { getLogoPathIfExists } = require('../services/settings');
+const fsSync = require('fs');
 
 const router = express.Router();
 
@@ -121,11 +123,32 @@ router.get('/display-static', async (req, res, next) => {
     htmlTemplate = htmlTemplate.replace('<!-- AVAILABLE_CARDS_PLACEHOLDER -->', availableCardsHtml);
     htmlTemplate = htmlTemplate.replace('<!-- CALLS_PLACEHOLDER -->', callsHtml);
     htmlTemplate = htmlTemplate.replace('<!-- TIMESTAMP_PLACEHOLDER -->', new Date().toLocaleString('fr-FR'));
+    // Logo placeholder
+    const logoPath = await getLogoPathIfExists();
+    const logoTag = logoPath ? '<img class="logo" src="/public/logo" alt="Logo" />' : '';
+    htmlTemplate = htmlTemplate.replace('<!-- LOGO_PLACEHOLDER -->', logoTag);
 
     // Send the generated HTML
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(htmlTemplate);
   } catch (err) {
     next(err);
+  }
+});
+
+// Serve logo if available
+router.get('/logo', async (req, res) => {
+  try {
+    const p = await getLogoPathIfExists();
+    if (!p) return res.status(404).send('Not Found');
+    const stream = fsSync.createReadStream(p);
+    // Content-Type based on extension
+    if (p.endsWith('.png')) res.type('png');
+    else if (p.endsWith('.jpg')) res.type('jpeg');
+    else if (p.endsWith('.webp')) res.type('webp');
+    else res.type('octet-stream');
+    stream.pipe(res);
+  } catch {
+    res.status(404).send('Not Found');
   }
 });
