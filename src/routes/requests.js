@@ -3,9 +3,21 @@ const { db } = require('../services/db');
 const { validateNewRequest, validateUpdateRequest, validateStatus } = require('../services/validator');
 const { requireAuth } = require('../middleware/auth');
 const { findByCode } = require('../services/cardTypes');
+const { verifyToken } = require('../services/auth');
+const { getById: getUserById } = require('../services/users');
 const suggestions = require('../services/suggestions');
 
 const router = express.Router();
+
+// --- SSE clients registry for live events ---
+const sseClients = new Set();
+
+function sseBroadcast(event, payload) {
+  const data = typeof payload === 'string' ? payload : JSON.stringify(payload);
+  for (const client of sseClients) {
+    try { client.write(`event: ${event}\n` + `data: ${data}\n\n`); } catch { /* ignore broken clients */ }
+  }
+}
 
 // GET /api/requests
 router.get('/', requireAuth, async (req, res, next) => {
@@ -49,6 +61,29 @@ router.get('/suggestions', requireAuth, async (req, res, next) => {
   }
 });
 
+// GET /api/requests/events (SSE) — auth via query token to support EventSource
+router.get('/events', async (req, res) => {
+  try {
+    const token = (req.query && req.query.token) ? String(req.query.token) : '';
+    const payload = verifyToken(token);
+    if (!payload || !payload.sub) { return res.status(401).json({ error: 'Unauthorized' }); }
+    const user = await getUserById(payload.sub);
+    if (!user) { return res.status(401).json({ error: 'Unauthorized' }); }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders && res.flushHeaders();
+    res.write('retry: 10000\n\n');
+
+    sseClients.add(res);
+    const ping = setInterval(() => { try { res.write(': ping\n\n'); } catch {} }, 25000);
+    req.on('close', () => { clearInterval(ping); sseClients.delete(res); try { res.end(); } catch {} });
+  } catch {
+    res.status(401).json({ error: 'Unauthorized' });
+  }
+});
+
 // GET /api/requests/:id
 router.get('/:id', requireAuth, async (req, res, next) => {
   try {
@@ -82,6 +117,8 @@ router.post('/', requireAuth, async (req, res, next) => {
     if (!type) {return res.status(400).json({ error: 'Unknown cardType' });}
     const created = await db.create(payload, req.user);
     res.status(201).json(created);
+    // Notify listeners about new request
+    try { sseBroadcast('request.created', { id: created.id, applicantName: created.applicantName, cardType: created.cardType, createdAt: created.createdAt, ownerId: created.ownerId || null }); } catch {}
   } catch (err) {
     next(err);
   }

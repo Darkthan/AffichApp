@@ -6,6 +6,7 @@ function getStoredToken() {
 let authToken = getStoredToken();
 let cardTypesCache = [];
 let suggestionsCache = [];
+let esRequests = null;
 
 function authHeaders() {
   const headers = {};
@@ -147,10 +148,7 @@ async function fetchSuggestions(q) {
   return fetchJSON('/api/requests/suggestions' + qp);
 }
 
-function typeLabelFromCode(code) {
-  const t = (cardTypesCache || []).find((x) => x.code === code);
-  return (t && t.label) || code || '';
-}
+// typeLabelFromCode already defined earlier
 
 function renderApplicantSuggestions(list, targetInput, typeSelect) {
   const box = document.getElementById('applicant-suggest-box');
@@ -297,6 +295,50 @@ async function loadCardTypes() {
   } catch {}
 }
 
+// --- Browser Notifications for new requests ---
+function ensureNotificationPermission() {
+  if (!('Notification' in window)) { return; }
+  if (Notification.permission === 'default') {
+    setTimeout(() => { try { Notification.requestPermission(); } catch {} }, 500);
+  }
+}
+
+function typeLabelFromCode(code) {
+  const t = (cardTypesCache || []).find((x) => x.code === code);
+  return (t && t.label) || code || '';
+}
+
+function initRequestNotifications() {
+  if (!window.currentUser) { return; }
+  if (!('EventSource' in window)) { return; }
+  if (esRequests) { return; }
+  const token = authToken || '';
+  if (!token) { return; }
+  try {
+    esRequests = new EventSource(`/api/requests/events?token=${encodeURIComponent(token)}`);
+    esRequests.addEventListener('request.created', (ev) => {
+      let data = null; try { data = JSON.parse(ev.data); } catch {}
+      if (data && data.ownerId && window.currentUser && data.ownerId === window.currentUser.id) {
+        // ignore self-created notifications
+        return;
+      }
+      const title = 'Nouvelle demande de carte';
+      const body = data ? `${data.applicantName} • ${typeLabelFromCode(data.cardType)}` : 'Une nouvelle demande a été ajoutée.';
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try { new Notification(title, { body, icon: '/public/logo' }); } catch {}
+      } else {
+        try {
+          const container = document.getElementById('list');
+          const note = el('p', { class: 'msg success' }, body);
+          container && container.prepend(note);
+          setTimeout(() => { note && note.remove(); }, 4000);
+        } catch {}
+      }
+      loadList().catch(() => {});
+    });
+  } catch {}
+}
+
 async function loadSuggestions() {
   try {
     const list = await fetchJSON('/api/requests/suggestions');
@@ -400,6 +442,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderAuth();
   // initial load of calls if authenticated
   if (window.currentUser) {await loadCalls();}
+  // Notifications: ask permission and init SSE
+  ensureNotificationPermission();
+  initRequestNotifications();
 });
 
 // --- Calls (appels) ---
