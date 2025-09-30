@@ -31,8 +31,11 @@ module.exports = [
         setInterval: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        clearInterval: 'readonly',
         URL: 'readonly',
         Blob: 'readonly',
+        Notification: 'readonly',
+        EventSource: 'readonly',
         // Jest globals
         describe: 'readonly',
         it: 'readonly',
