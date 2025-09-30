@@ -535,5 +535,41 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     if (enableBtn) { enableBtn.addEventListener('click', subscribePush); }
     if (disableBtn) { disableBtn.addEventListener('click', unsubscribePush); }
+
+    // Dev: generate VAPID keys (admin only, non-production)
+    const genBtn = document.getElementById('gen-vapid-btn');
+    const out = document.getElementById('vapid-output');
+    if (genBtn && out) {
+      genBtn.addEventListener('click', async () => {
+        out.textContent = '';
+        try {
+          const res = await fetch('/api/notifications/generate-vapid', { headers: authHeaders() });
+          if (!res.ok) {
+            out.textContent = "Génération indisponible (production ou droits insuffisants).";
+            return;
+          }
+          const data = await res.json();
+          out.textContent = `VAPID_PUBLIC_KEY=${data.publicKey}\nVAPID_PRIVATE_KEY=${data.privateKey}\nVAPID_SUBJECT=${data.subject}\n\n${data.note || ''}`;
+        } catch {
+          out.textContent = "Erreur lors de la génération des clés.";
+        }
+      });
+    }
+
+    const genProdBtn = document.getElementById('gen-vapid-prod-btn');
+    if (genProdBtn && out) {
+      genProdBtn.addEventListener('click', async () => {
+        out.textContent = '';
+        if (!confirm('Confirmer la génération et l\'installation de nouvelles clés VAPID sur ce serveur ?')) { return; }
+        try {
+          const res = await fetch('/api/notifications/vapid/generate', { method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true }) });
+          if (!res.ok) { out.textContent = "Échec de la génération côté serveur."; return; }
+          const data = await res.json();
+          out.textContent = `Clés installées sur le serveur.\nVAPID_PUBLIC_KEY=${data.publicKey}\nVAPID_SUBJECT=${data.subject}\n`;
+        } catch {
+          out.textContent = "Erreur lors de l'installation des clés.";
+        }
+      });
+    }
   }
 });
