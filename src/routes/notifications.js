@@ -18,7 +18,7 @@ router.post('/subscribe', requireAuth, async (req, res) => {
     if (!subscription || !subscription.endpoint) { return res.status(400).json({ error: 'subscription required' }); }
     await subs.add(req.user.id, subscription);
     res.status(201).json({ ok: true });
-  } catch (e) {
+  } catch (_e) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -31,7 +31,7 @@ router.delete('/subscribe', requireAuth, async (req, res) => {
     const ok = await subs.remove(req.user.id, endpoint);
     if (!ok) { return res.status(404).json({ error: 'Not found' }); }
     res.status(204).send();
-  } catch (e) {
+  } catch (_e) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

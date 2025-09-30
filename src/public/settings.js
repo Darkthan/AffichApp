@@ -511,9 +511,9 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (!pub) { msg.textContent = 'Serveur non configuré (VAPID)'; msg.className = 'msg error'; return; }
         const reg = await navigator.serviceWorker.register('/sw.js');
         const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(pub) });
-        const ok = await fetchJSON('/api/notifications/subscribe', { method: 'POST', body: JSON.stringify({ subscription: sub }) });
+        await fetchJSON('/api/notifications/subscribe', { method: 'POST', body: JSON.stringify({ subscription: sub }) });
         msg.textContent = 'Notifications activées ✔'; msg.className = 'msg success';
-      } catch (e) {
+      } catch (_e) {
         msg.textContent = 'Échec de l\'activation des notifications'; msg.className = 'msg error';
       }
     }

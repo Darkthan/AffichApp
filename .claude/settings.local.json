@@ -10,7 +10,8 @@
       "Read(//c/Users/lducreux.PEDAGO/Documents/DevProjects/ApplicationDemandesCartes/**)",
       "Bash(npm run lint)",
       "Bash(npx eslint:*)",
-      "Bash(npm run smoke:*)"
+      "Bash(npm run smoke:*)",
+      "Bash(npm install)"
     ],
     "deny": [],
     "ask": []

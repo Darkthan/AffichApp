@@ -36,6 +36,9 @@ module.exports = [
         Blob: 'readonly',
         Notification: 'readonly',
         EventSource: 'readonly',
+        atob: 'readonly',
+        btoa: 'readonly',
+        Uint8Array: 'readonly',
         // Jest globals
         describe: 'readonly',
         it: 'readonly',
