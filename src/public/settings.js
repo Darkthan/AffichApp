@@ -385,7 +385,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           a.remove();
           URL.revokeObjectURL(url);
           if (msg) { msg.textContent = 'Export effectué ✔'; msg.className = 'msg success'; }
-        } catch (err) {
+        } catch (_err) {
           if (msg) { msg.textContent = 'Échec de l\'export'; msg.className = 'msg error'; }
         }
       });
@@ -410,7 +410,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           a.click();
           a.remove();
           URL.revokeObjectURL(url);
-        } catch (err) {
+        } catch (_err) {
           if (msg) { msg.textContent = 'Échec de l\'export, suppression annulée'; msg.className = 'msg error'; }
           return;
         }
@@ -420,7 +420,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           const del = await fetch('/api/settings/suggestions', { method: 'DELETE', headers: authHeaders() });
           if (!del.ok) { throw new Error('Suppression échouée'); }
           if (msg) { msg.textContent = 'Suggestions supprimées ✔'; msg.className = 'msg success'; }
-        } catch (err) {
+        } catch (_err2) {
           if (msg) { msg.textContent = 'Échec de la suppression'; msg.className = 'msg error'; }
         }
       });

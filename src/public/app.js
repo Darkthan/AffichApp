@@ -136,7 +136,7 @@ async function updateStatus(id, status) {
   try {
     await fetchJSON(`/api/requests/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
     await loadList();
-  } catch (e) {
+  } catch (_e) {
     alert('Impossible de mettre à jour le statut.');
   }
 }

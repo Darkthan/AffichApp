@@ -31,6 +31,8 @@ module.exports = [
         setInterval: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        URL: 'readonly',
+        Blob: 'readonly',
         // Jest globals
         describe: 'readonly',
         it: 'readonly',
