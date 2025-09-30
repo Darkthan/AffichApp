@@ -346,6 +346,26 @@ window.addEventListener('DOMContentLoaded', async () => {
     const logoForm = document.getElementById('logo-form');
     if (logoForm) {logoForm.addEventListener('submit', onLogoSubmit);}
 
+    const importForm = document.getElementById('import-suggestions-form');
+    if (importForm) {
+      importForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById('import-msg');
+        if (msg) { msg.textContent = ''; msg.className = 'msg'; }
+        const file = importForm.querySelector('input[type="file"][name="csv"]').files[0];
+        if (!file) { if (msg) { msg.textContent = 'Fichier requis'; msg.className = 'msg error'; } return; }
+        try {
+          const text = await file.text();
+          const res = await fetchJSON('/api/settings/suggestions/import-csv', { method: 'POST', body: JSON.stringify({ csv: text }) });
+          if (msg) { msg.textContent = `Import terminé ✔ (importés: ${res.imported}, ignorés: ${res.skipped})`; msg.className = 'msg success'; }
+          importForm.reset();
+        } catch (err) {
+          const reason = err && err.message ? ': ' + err.message : '';
+          if (msg) { msg.textContent = 'Échec de l\'import' + reason; msg.className = 'msg error'; }
+        }
+      });
+    }
+
     document.getElementById('add-type-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const formEl = e.currentTarget;

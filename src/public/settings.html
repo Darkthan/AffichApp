@@ -40,6 +40,13 @@
         </form>
         <h3>Types existants</h3>
         <div id="types-list"></div>
+        <h3>Importer des suggestions (CSV)</h3>
+        <form id="import-suggestions-form" class="inline">
+          <input type="file" name="csv" accept=".csv,text/csv" required />
+          <button type="submit">Importer</button>
+          <p class="small muted">Format: colonne 1 = Nom/Prénom, colonne 2 = Type (code ou libellé). Délimiteur , ou ;. <a href="/examples/suggestions-sample.csv" download>Télécharger un exemple</a></p>
+          <p id="import-msg" class="msg"></p>
+        </form>
         <h3>Utilisateurs</h3>
         <form id="add-user-form" class="grid">
           <input type="text" name="name" placeholder="Nom" required />
