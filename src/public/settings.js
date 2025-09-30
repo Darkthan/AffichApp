@@ -476,4 +476,64 @@ window.addEventListener('DOMContentLoaded', async () => {
       nonAdminPanel.removeAttribute('hidden');
     }
   }
+
+  // Notifications section visible for any authenticated user
+  const notifPanel = document.getElementById('notifications-panel');
+  if (window.currentUser && notifPanel) {
+    notifPanel.classList.remove('hidden');
+    notifPanel.removeAttribute('hidden');
+    const msg = document.getElementById('push-msg');
+    const enableBtn = document.getElementById('enable-push-btn');
+    const disableBtn = document.getElementById('disable-push-btn');
+
+    async function getVapidPublicKey() {
+      try {
+        const res = await fetch('/api/notifications/vapid-public');
+        if (!res.ok) { return null; }
+        const data = await res.json();
+        return data.publicKey || null;
+      } catch { return null; }
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+      return outputArray;
+    }
+
+    async function subscribePush() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) { msg.textContent = 'Notifications push non supportées'; msg.className = 'msg error'; return; }
+      try {
+        const pub = await getVapidPublicKey();
+        if (!pub) { msg.textContent = 'Serveur non configuré (VAPID)'; msg.className = 'msg error'; return; }
+        const reg = await navigator.serviceWorker.register('/sw.js');
+        const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(pub) });
+        const ok = await fetchJSON('/api/notifications/subscribe', { method: 'POST', body: JSON.stringify({ subscription: sub }) });
+        msg.textContent = 'Notifications activées ✔'; msg.className = 'msg success';
+      } catch (e) {
+        msg.textContent = 'Échec de l\'activation des notifications'; msg.className = 'msg error';
+      }
+    }
+
+    async function unsubscribePush() {
+      try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (!reg) { msg.textContent = 'Aucun service worker'; msg.className = 'msg'; return; }
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await fetchJSON('/api/notifications/subscribe', { method: 'DELETE', body: JSON.stringify({ endpoint: sub.endpoint }) });
+          await sub.unsubscribe();
+        }
+        msg.textContent = 'Notifications désactivées ✔'; msg.className = 'msg success';
+      } catch {
+        msg.textContent = 'Échec de la désactivation'; msg.className = 'msg error';
+      }
+    }
+
+    if (enableBtn) { enableBtn.addEventListener('click', subscribePush); }
+    if (disableBtn) { disableBtn.addEventListener('click', unsubscribePush); }
+  }
 });

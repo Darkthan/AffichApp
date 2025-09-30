@@ -9,6 +9,7 @@ const { router: cardTypesRouter } = require('./routes/cardTypes');
 const { router: publicRouter } = require('./routes/public');
 const { router: settingsRouter } = require('./routes/settings');
 const { router: callsRouter } = require('./routes/calls');
+const { router: notificationsRouter } = require('./routes/notifications');
 
 function createApp() {
   const app = express();
@@ -27,6 +28,7 @@ function createApp() {
   app.use('/api/card-types', cardTypesRouter);
   app.use('/api/settings', settingsRouter);
   app.use('/api/calls', callsRouter);
+  app.use('/api/notifications', notificationsRouter);
   app.use('/public', publicRouter);
 
   app.get('/health', (req, res) => {

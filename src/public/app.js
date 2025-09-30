@@ -445,6 +445,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Notifications: ask permission and init SSE
   ensureNotificationPermission();
   initRequestNotifications();
+  // Register service worker (for background push notifications)
+  if ('serviceWorker' in navigator) {
+    try { await navigator.serviceWorker.register('/sw.js'); } catch {}
+  }
 });
 
 // --- Calls (appels) ---

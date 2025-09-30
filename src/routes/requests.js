@@ -5,6 +5,7 @@ const { requireAuth } = require('../middleware/auth');
 const { findByCode } = require('../services/cardTypes');
 const { verifyToken } = require('../services/auth');
 const { getById: getUserById } = require('../services/users');
+const push = require('../services/push');
 const suggestions = require('../services/suggestions');
 
 const router = express.Router();
@@ -119,6 +120,8 @@ router.post('/', requireAuth, async (req, res, next) => {
     res.status(201).json(created);
     // Notify listeners about new request
     try { sseBroadcast('request.created', { id: created.id, applicantName: created.applicantName, cardType: created.cardType, createdAt: created.createdAt, ownerId: created.ownerId || null }); } catch {}
+    // Push notifications (background) if configured
+    try { await push.broadcastNewRequest(created, req.user); } catch {}
   } catch (err) {
     next(err);
   }
