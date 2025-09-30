@@ -47,6 +47,13 @@
           <p class="small muted">Format: colonne 1 = Nom/Prénom, colonne 2 = Type (code ou libellé). Délimiteur , ou ;. <a href="/examples/suggestions-sample.csv" download>Télécharger un exemple</a></p>
           <p id="import-msg" class="msg"></p>
         </form>
+
+        <h3>Suggestions: export et suppression</h3>
+        <div class="inline" id="suggestions-actions">
+          <button id="export-suggestions-btn" class="btn">Exporter (CSV)</button>
+          <button id="export-then-delete-btn" class="btn danger">Exporter puis supprimer</button>
+          <p id="suggestions-actions-msg" class="msg"></p>
+        </div>
         <h3>Utilisateurs</h3>
         <form id="add-user-form" class="grid">
           <input type="text" name="name" placeholder="Nom" required />

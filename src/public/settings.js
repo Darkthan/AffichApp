@@ -366,6 +366,66 @@ window.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
+    // Export suggestions as CSV
+    const exportBtn = document.getElementById('export-suggestions-btn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', async () => {
+        const msg = document.getElementById('suggestions-actions-msg');
+        if (msg) { msg.textContent = ''; msg.className = 'msg'; }
+        try {
+          const res = await fetch('/api/settings/suggestions/export-csv', { headers: authHeaders() });
+          if (!res.ok) { throw new Error('Export échoué'); }
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'suggestions-export.csv';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          if (msg) { msg.textContent = 'Export effectué ✔'; msg.className = 'msg success'; }
+        } catch (err) {
+          if (msg) { msg.textContent = 'Échec de l\'export'; msg.className = 'msg error'; }
+        }
+      });
+    }
+
+    // Export then delete suggestions
+    const exportDeleteBtn = document.getElementById('export-then-delete-btn');
+    if (exportDeleteBtn) {
+      exportDeleteBtn.addEventListener('click', async () => {
+        const msg = document.getElementById('suggestions-actions-msg');
+        if (msg) { msg.textContent = ''; msg.className = 'msg'; }
+        // First export
+        try {
+          const res = await fetch('/api/settings/suggestions/export-csv', { headers: authHeaders() });
+          if (!res.ok) { throw new Error('Export échoué'); }
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'suggestions-export.csv';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          if (msg) { msg.textContent = 'Échec de l\'export, suppression annulée'; msg.className = 'msg error'; }
+          return;
+        }
+        // Then confirm deletion
+        if (!confirm('Confirmer la suppression de toutes les suggestions ?')) { return; }
+        try {
+          const del = await fetch('/api/settings/suggestions', { method: 'DELETE', headers: authHeaders() });
+          if (!del.ok) { throw new Error('Suppression échouée'); }
+          if (msg) { msg.textContent = 'Suggestions supprimées ✔'; msg.className = 'msg success'; }
+        } catch (err) {
+          if (msg) { msg.textContent = 'Échec de la suppression'; msg.className = 'msg error'; }
+        }
+      });
+    }
+
     document.getElementById('add-type-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const formEl = e.currentTarget;

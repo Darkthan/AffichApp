@@ -54,5 +54,8 @@ async function getAll() {
   return items.sort((a, b) => (b.count || 0) - (a.count || 0) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
 }
 
-module.exports = { addOrUpdate, getAll };
+async function clearAll() {
+  await writeAll([]);
+}
 
+module.exports = { addOrUpdate, getAll, clearAll };

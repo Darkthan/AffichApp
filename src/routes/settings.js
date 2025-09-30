@@ -76,4 +76,32 @@ router.post('/suggestions/import-csv', requireAuth, requireRole('admin'), async 
   }
 });
 
+// GET /api/settings/suggestions/export-csv -> CSV download of suggestions
+router.get('/suggestions/export-csv', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const list = await suggestions.getAll();
+    const header = 'NOM/PRENOM;TYPE\n';
+    const body = list.map((x) => `${(x.name || '').replaceAll(';', ',')};${x.cardType || ''}`).join('\n');
+    const csv = header + body + (body ? '\n' : '');
+    const stamp = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="suggestions-export-${stamp}.csv"`);
+    res.status(200).send(csv);
+  } catch (e) {
+    console.error('Export CSV error:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// DELETE /api/settings/suggestions -> clear suggestions store
+router.delete('/suggestions', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    await suggestions.clearAll();
+    res.status(204).send();
+  } catch (e) {
+    console.error('Clear suggestions error:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 module.exports = { router };
