@@ -17,10 +17,10 @@ try {
   assert.equal(bad.valid, false, 'Expected invalid request');
 
   // Status
-  assert.equal(validateStatus('pending').valid, true);
-  assert.equal(validateStatus('approved').valid, true);
-  assert.equal(validateStatus('rejected').valid, true);
-  assert.equal(validateStatus('other').valid, false);
+  assert.equal(validateStatus('demande').valid, true);
+  assert.equal(validateStatus('impression').valid, true);
+  assert.equal(validateStatus('disponible').valid, true);
+  assert.equal(validateStatus('invalid').valid, false);
 
   // Route module loads without throwing
   require('../src/routes/requests');
