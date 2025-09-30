@@ -8,7 +8,7 @@ let authToken = getStoredToken();
 async function fetchJSON(url, options = {}) {
   const base = options || {};
   const headers = { ...(base.headers || {}) };
-  if (base.body != null && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  if (base.body !== null && base.body !== undefined && !headers['Content-Type']) {headers['Content-Type'] = 'application/json';}
   const res = await fetch(url, { ...base, headers });
   let data = null;
   try { data = await res.json(); } catch {}
@@ -29,8 +29,8 @@ async function login(email, password, remember) {
     // Clear previous tokens then set according to preference
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
-    if (remember) localStorage.setItem('token', authToken);
-    else sessionStorage.setItem('token', authToken);
+    if (remember) {localStorage.setItem('token', authToken);}
+    else {sessionStorage.setItem('token', authToken);}
   } catch {}
   // verify and redirect
   try { await fetchJSON('/api/auth/me', { headers: { Authorization: 'Bearer ' + authToken } }); } catch {}

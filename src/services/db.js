@@ -65,7 +65,7 @@ async function create(payload, owner) {
 async function updateStatus(id, status) {
   const items = await readAll();
   const idx = items.findIndex((x) => x.id === id);
-  if (idx === -1) return null;
+  if (idx === -1) {return null;}
   items[idx].status = status;
   items[idx].updatedAt = new Date().toISOString();
   await writeAll(items);
@@ -75,7 +75,7 @@ async function updateStatus(id, status) {
 async function remove(id) {
   const items = await readAll();
   const idx = items.findIndex((x) => x.id === id);
-  if (idx === -1) return false;
+  if (idx === -1) {return false;}
   items.splice(idx, 1);
   await writeAll(items);
   return true;

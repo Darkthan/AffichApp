@@ -1,14 +1,14 @@
 async function fetchJSON(url) {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {throw new Error(`HTTP ${res.status}`);}
   return res.json();
 }
 
 function el(tag, attrs = {}, ...children) {
   const e = document.createElement(tag);
   Object.entries(attrs).forEach(([k, v]) => {
-    if (k === 'class') e.className = v;
-    else e.setAttribute(k, v);
+    if (k === 'class') {e.className = v;}
+    else {e.setAttribute(k, v);}
   });
   children.flat().forEach((c) => e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c));
   return e;
@@ -93,7 +93,7 @@ async function loadAll() {
 
 function adjustScaleToViewport() {
   const container = document.querySelector('.screen');
-  if (!container) return;
+  if (!container) {return;}
   // Reset any previous transform before measuring
   container.style.transform = '';
   container.style.width = '';

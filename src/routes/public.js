@@ -140,13 +140,13 @@ router.get('/display-static', async (req, res, next) => {
 router.get('/logo', async (req, res) => {
   try {
     const p = await getLogoPathIfExists();
-    if (!p) return res.status(404).send('Not Found');
+    if (!p) {return res.status(404).send('Not Found');}
     const stream = fsSync.createReadStream(p);
     // Content-Type based on extension
-    if (p.endsWith('.png')) res.type('png');
-    else if (p.endsWith('.jpg')) res.type('jpeg');
-    else if (p.endsWith('.webp')) res.type('webp');
-    else res.type('octet-stream');
+    if (p.endsWith('.png')) {res.type('png');}
+    else if (p.endsWith('.jpg')) {res.type('jpeg');}
+    else if (p.endsWith('.webp')) {res.type('webp');}
+    else {res.type('octet-stream');}
     stream.pipe(res);
   } catch {
     res.status(404).send('Not Found');

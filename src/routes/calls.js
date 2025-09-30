@@ -32,12 +32,12 @@ router.post('/', requireAuth, async (req, res, next) => {
 router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
-    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+    if (Number.isNaN(id)) {return res.status(400).json({ error: 'Invalid id' });}
     const items = await calls.getAll();
     const item = items.find((x) => x.id === id);
-    if (!item) return res.status(404).json({ error: 'Not found' });
+    if (!item) {return res.status(404).json({ error: 'Not found' });}
     const ok = await calls.remove(id);
-    if (!ok) return res.status(404).json({ error: 'Not found' });
+    if (!ok) {return res.status(404).json({ error: 'Not found' });}
     res.status(204).send();
   } catch (err) { next(err); }
 });

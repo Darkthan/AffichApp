@@ -82,7 +82,7 @@ async function removeByCode(code) {
   const items = await readAll();
   const normalized = String(code).trim().toLowerCase();
   const idx = items.findIndex((t) => t.code === normalized);
-  if (idx === -1) return false;
+  if (idx === -1) {return false;}
   items.splice(idx, 1);
   await writeAll(items);
   return true;

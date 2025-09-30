@@ -18,14 +18,14 @@ async function seedAdminIfEmpty() {
   const users = await getAll();
   // If there is at least one admin, nothing to do
   const hasAdmin = users.some((u) => u && u.role === 'admin');
-  if (hasAdmin) return null;
+  if (hasAdmin) {return null;}
   const now = new Date().toISOString();
   const emailEnv = process.env.ADMIN_DEFAULT_EMAIL || 'admin@example.com';
   const baseEmail = String(emailEnv).toLowerCase();
   let seedEmail = baseEmail;
   // Ensure email uniqueness
   const existsEmail = users.find((u) => (u.email || '').toLowerCase() === seedEmail);
-  if (existsEmail) seedEmail = `admin+seed-${Date.now()}@example.com`;
+  if (existsEmail) {seedEmail = `admin+seed-${Date.now()}@example.com`;}
   const nextId = users.length ? Math.max(...users.map((x) => x.id || 0)) + 1 : 1;
   const passwordHash = await hashPassword(process.env.ADMIN_DEFAULT_PASSWORD || 'admin123');
   const admin = {
@@ -93,7 +93,7 @@ async function create({ name, email, role, password }) {
 async function update(id, changes) {
   const users = await readAll();
   const idx = users.findIndex((u) => u.id === id);
-  if (idx === -1) return null;
+  if (idx === -1) {return null;}
   const now = new Date().toISOString();
   if (changes.email) {
     const exists = users.find((u) => u.email.toLowerCase() === changes.email.toLowerCase() && u.id !== id);
@@ -104,23 +104,23 @@ async function update(id, changes) {
     }
   }
   const updated = { ...users[idx] };
-  if (changes.name != null) updated.name = changes.name;
-  if (changes.email != null) updated.email = changes.email;
-  if (changes.role != null) updated.role = changes.role;
-  if (changes.password != null && changes.password !== '') {
+  if (changes.name !== null && changes.name !== undefined) {updated.name = changes.name;}
+  if (changes.email !== null && changes.email !== undefined) {updated.email = changes.email;}
+  if (changes.role !== null && changes.role !== undefined) {updated.role = changes.role;}
+  if (changes.password !== null && changes.password !== undefined && changes.password !== '') {
     updated.passwordHash = await hashPassword(changes.password);
   }
   updated.updatedAt = now;
   users[idx] = updated;
   await writeAll(users);
-  const { passwordHash, ...safe } = updated;
+  const { passwordHash: _passwordHash, ...safe } = updated;
   return safe;
 }
 
 async function remove(id) {
   const users = await readAll();
   const idx = users.findIndex((u) => u.id === id);
-  if (idx === -1) return false;
+  if (idx === -1) {return false;}
   users.splice(idx, 1);
   await writeAll(users);
   return true;

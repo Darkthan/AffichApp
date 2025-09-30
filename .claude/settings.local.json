@@ -7,7 +7,9 @@
       "Bash(npm test)",
       "Bash(cat:*)",
       "Bash(node -e \"const {verifyPassword} = require(''./src/services/auth''); const hash = ''$2b$10$.YoYF9M2HQDSQ/ElppqCPeO/0.Ty5t95bKr6aKF24eEtIYp79yLFS''; verifyPassword(''admin123'', hash).then(ok => console.log(''admin123 matches:'', ok));\")",
-      "Read(//c/Users/lducreux.PEDAGO/Documents/DevProjects/ApplicationDemandesCartes/**)"
+      "Read(//c/Users/lducreux.PEDAGO/Documents/DevProjects/ApplicationDemandesCartes/**)",
+      "Bash(npm run lint)",
+      "Bash(npx eslint:*)"
     ],
     "deny": [],
     "ask": []

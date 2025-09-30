@@ -7,15 +7,15 @@ let authToken = getStoredToken();
 
 function authHeaders() {
   const headers = {};
-  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+  if (authToken) {headers['Authorization'] = 'Bearer ' + authToken;}
   return headers;
 }
 
 async function fetchJSON(url, options = {}) {
   const base = options || {};
   const headers = { ...(base.headers || {}) };
-  if (authToken && !headers['Authorization']) headers['Authorization'] = 'Bearer ' + authToken;
-  if (base.body != null && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  if (authToken && !headers['Authorization']) {headers['Authorization'] = 'Bearer ' + authToken;}
+  if (base.body !== null && base.body !== undefined && !headers['Content-Type']) {headers['Content-Type'] = 'application/json';}
   const res = await fetch(url, { ...base, headers });
   let data = null;
   try { data = await res.json(); } catch {}
@@ -32,12 +32,12 @@ async function fetchJSON(url, options = {}) {
 function el(tag, attrs = {}, ...children) {
   const e = document.createElement(tag);
   Object.entries(attrs).forEach(([k, v]) => {
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2), v);
-    else e.setAttribute(k, v);
+    if (k === 'class') {e.className = v;}
+    else if (k.startsWith('on') && typeof v === 'function') {e.addEventListener(k.slice(2), v);}
+    else {e.setAttribute(k, v);}
   });
   children.flat().forEach((c) => {
-    if (c == null) return;
+    if (c === null || c === undefined) {return;}
     e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
   });
   return e;
@@ -82,7 +82,7 @@ function renderList(items) {
             {
               class: 'btn small danger',
               onclick: async () => {
-                if (!confirm('Supprimer cette demande ?')) return;
+                if (!confirm('Supprimer cette demande ?')) {return;}
                 try {
                   await deleteRequest(it.id);
                   await loadList();
@@ -100,7 +100,7 @@ function renderList(items) {
             {
               class: 'btn small danger',
               onclick: async () => {
-                if (!confirm('Supprimer cette demande ?')) return;
+                if (!confirm('Supprimer cette demande ?')) {return;}
                 try {
                   await deleteRequest(it.id);
                   await loadList();
@@ -131,15 +131,15 @@ function renderList(items) {
 
 async function deleteRequest(id) {
   const res = await fetch(`/api/requests/${id}`, { method: 'DELETE', headers: authHeaders() });
-  if (!res.ok) throw new Error('Delete failed');
+  if (!res.ok) {throw new Error('Delete failed');}
 }
 
 async function loadList() {
   try {
     const items = await fetchJSON('/api/requests');
     renderList(items);
-  } catch (e) {
-    console.error(e);
+  } catch (_e) {
+    console.error(_e);
   }
 }
 
@@ -158,8 +158,8 @@ async function onSubmit(e) {
   const msg = document.getElementById('form-msg');
   msg.textContent = '';
   const payload = Object.fromEntries(new FormData(form).entries());
-  if (payload.email != null && payload.email.trim() === '') delete payload.email;
-  if (payload.details != null && payload.details.trim() === '') delete payload.details;
+  if (payload.email !== null && payload.email !== undefined && payload.email.trim() === '') {delete payload.email;}
+  if (payload.details !== null && payload.details !== undefined && payload.details.trim() === '') {delete payload.details;}
   if (!payload.applicantName || !payload.cardType) {
     msg.textContent = 'Veuillez remplir les champs obligatoires.';
     msg.className = 'msg error';
@@ -191,13 +191,6 @@ function statusLabel(code) {
   }
 }
 
-async function login(email, password) {
-  const res = await fetchJSON('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
-  authToken = res.token;
-  localStorage.setItem('token', authToken);
-  window.currentUser = res.user;
-  window.location.replace('/login.html');
-}
 
 function logout() {
   authToken = '';
@@ -237,7 +230,7 @@ function renderAuth() {
 
 function renderTopbarMenu() {
   const menu = document.getElementById('menu-dropdown');
-  if (!menu) return;
+  if (!menu) {return;}
   menu.innerHTML = '';
   if (window.currentUser) {
     const settingsLink = el('a', { class: 'menu-item', href: '/settings.html' }, 'Paramètres');
@@ -252,8 +245,8 @@ function renderTopbarMenu() {
 function closeMenu() {
   const menu = document.getElementById('menu-dropdown');
   const toggle = document.getElementById('menu-toggle');
-  if (menu) menu.classList.remove('open');
-  if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  if (menu) {menu.classList.remove('open');}
+  if (toggle) {toggle.setAttribute('aria-expanded', 'false');}
 }
 
 async function refreshUI() {
@@ -263,7 +256,7 @@ async function refreshUI() {
       await loadList();
     } else {
       const listEl = document.getElementById('list');
-      if (listEl) listEl.innerHTML = '';
+      if (listEl) {listEl.innerHTML = '';}
     }
     await loadCalls();
   } else {
@@ -309,7 +302,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
     document.addEventListener('click', (e) => {
-      if (!dropdown.classList.contains('open')) return;
+      if (!dropdown.classList.contains('open')) {return;}
       if (!dropdown.contains(e.target) && e.target !== toggle) {
         dropdown.classList.remove('open');
         toggle.setAttribute('aria-expanded', 'false');
@@ -317,7 +310,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
   const ok = await ensureAuthOrRedirect();
-  if (!ok) return;
+  if (!ok) {return;}
   document.getElementById('request-form').addEventListener('submit', onSubmit);
   /* login form removed; standalone page */
   /*document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -332,9 +325,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   });*/
   const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) logoutBtn.addEventListener('click', () => logout());
+  if (logoutBtn) {logoutBtn.addEventListener('click', () => logout());}
   const callForm = document.getElementById('call-form');
-  if (callForm) callForm.addEventListener('submit', onCallSubmit);
+  if (callForm) {callForm.addEventListener('submit', onCallSubmit);}
 
   // restore session if token exists
   if (authToken) {
@@ -345,7 +338,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
   renderAuth();
   // initial load of calls if authenticated
-  if (window.currentUser) await loadCalls();
+  if (window.currentUser) {await loadCalls();}
 });
 
 // --- Calls (appels) ---
@@ -355,18 +348,17 @@ async function createCall(data) {
 
 async function deleteCall(id) {
   const res = await fetch(`/api/calls/${id}`, { method: 'DELETE', headers: authHeaders() });
-  if (!res.ok) throw new Error('Delete failed');
+  if (!res.ok) {throw new Error('Delete failed');}
 }
 
 function renderCalls(items) {
   const container = document.getElementById('calls-list');
-  if (!container) return;
+  if (!container) {return;}
   container.innerHTML = '';
   if (!items.length) { container.appendChild(el('p', { class: 'muted' }, 'Aucun appel pour le moment.')); return; }
   const table = el('table', { class: 'table' });
   table.appendChild(el('thead', {}, el('tr', {}, el('th', {}, 'Nom'), el('th', {}, "Lieu de l'appel"), el('th', {}, 'Créé le'), el('th', {}, 'Par'), el('th', {}, 'Actions'))));
   const tbody = el('tbody');
-  const user = window.currentUser || {};
   items.forEach((c) => {
     const canDelete = true; // suppression autorisée pour tout rôle authentifié
     tbody.appendChild(el('tr', {},
@@ -374,7 +366,7 @@ function renderCalls(items) {
       el('td', {}, c.location),
       el('td', {}, new Date(c.createdAt).toLocaleString()),
       el('td', {}, c.createdByName || '—'),
-      el('td', {}, canDelete ? el('button', { class: 'btn small danger', onclick: async () => { if (!confirm('Supprimer cet appel ?')) return; try { await deleteCall(c.id); await loadCalls(); } catch { alert('Suppression impossible'); } } }, 'Supprimer') : el('span', { class: 'muted' }, '—'))
+      el('td', {}, canDelete ? el('button', { class: 'btn small danger', onclick: async () => { if (!confirm('Supprimer cet appel ?')) {return;} try { await deleteCall(c.id); await loadCalls(); } catch { alert('Suppression impossible'); } } }, 'Supprimer') : el('span', { class: 'muted' }, '—'))
     ));
   });
   table.appendChild(tbody);

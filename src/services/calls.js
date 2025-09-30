@@ -55,7 +55,7 @@ async function create({ name, location }, user) {
 async function remove(id) {
   const items = await readAll();
   const idx = items.findIndex((x) => x.id === id);
-  if (idx === -1) return false;
+  if (idx === -1) {return false;}
   items.splice(idx, 1);
   await writeAll(items);
   return true;

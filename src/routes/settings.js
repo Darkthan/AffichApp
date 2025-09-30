@@ -9,12 +9,12 @@ const router = express.Router();
 router.post('/logo', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { data, mime } = req.body || {};
-    if (!data) return res.status(400).json({ error: 'data required' });
+    if (!data) {return res.status(400).json({ error: 'data required' });}
     const filePath = await saveLogoFromData(data, mime);
     res.status(201).json({ ok: true, url: '/public/logo', file: path.basename(filePath) });
   } catch (e) {
-    if (e.code === 'E_BAD_MIME') return res.status(400).json({ error: 'Unsupported file type' });
-    if (e.code === 'E_TOO_LARGE') return res.status(413).json({ error: 'File too large' });
+    if (e.code === 'E_BAD_MIME') {return res.status(400).json({ error: 'Unsupported file type' });}
+    if (e.code === 'E_TOO_LARGE') {return res.status(413).json({ error: 'File too large' });}
     console.error('Upload logo error:', e);
     res.status(500).json({ error: 'Internal Server Error' });
   }

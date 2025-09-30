@@ -35,7 +35,7 @@ async function removeExistingLogos() {
 
 function parseDataUrl(dataUrl) {
   const m = /^data:([^;]+);base64,(.*)$/.exec(dataUrl || '');
-  if (!m) return null;
+  if (!m) {return null;}
   const mime = m[1];
   const b64 = m[2];
   return { mime, b64 };

@@ -7,15 +7,15 @@ let authToken = getStoredToken();
 
 function authHeaders() {
   const headers = {};
-  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+  if (authToken) {headers['Authorization'] = 'Bearer ' + authToken;}
   return headers;
 }
 
 async function fetchJSON(url, options = {}) {
   const base = options || {};
   const headers = { ...(base.headers || {}) };
-  if (authToken && !headers['Authorization']) headers['Authorization'] = 'Bearer ' + authToken;
-  if (base.body != null && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  if (authToken && !headers['Authorization']) {headers['Authorization'] = 'Bearer ' + authToken;}
+  if (base.body !== null && base.body !== undefined && !headers['Content-Type']) {headers['Content-Type'] = 'application/json';}
   const res = await fetch(url, { ...base, headers });
   let data = null;
   try { data = await res.json(); } catch {}
@@ -32,12 +32,12 @@ async function fetchJSON(url, options = {}) {
 function el(tag, attrs = {}, ...children) {
   const e = document.createElement(tag);
   Object.entries(attrs).forEach(([k, v]) => {
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2), v);
-    else e.setAttribute(k, v);
+    if (k === 'class') {e.className = v;}
+    else if (k.startsWith('on') && typeof v === 'function') {e.addEventListener(k.slice(2), v);}
+    else {e.setAttribute(k, v);}
   });
   children.flat().forEach((c) => {
-    if (c == null) return;
+    if (c === null || c === undefined) {return;}
     e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
   });
   return e;
@@ -69,7 +69,7 @@ async function ensureAuthOrRedirect() {
 
 function renderTopbarMenu() {
   const menu = document.getElementById('menu-dropdown');
-  if (!menu) return;
+  if (!menu) {return;}
   menu.innerHTML = '';
   if (window.currentUser) {
     const homeLink = el('a', { class: 'menu-item', href: '/' }, 'Accueil');
@@ -84,8 +84,8 @@ function renderTopbarMenu() {
 function closeMenu() {
   const menu = document.getElementById('menu-dropdown');
   const toggle = document.getElementById('menu-toggle');
-  if (menu) menu.classList.remove('open');
-  if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  if (menu) {menu.classList.remove('open');}
+  if (toggle) {toggle.setAttribute('aria-expanded', 'false');}
 }
 
 async function loadCardTypes() {
@@ -106,14 +106,14 @@ async function deleteCardType(code) {
     e.status = 409;
     throw e;
   }
-  if (!res.ok) throw new Error('delete_failed');
+  if (!res.ok) {throw new Error('delete_failed');}
 }
 
 async function loadTypesList() {
   try {
     const types = await loadCardTypes();
     const container = document.getElementById('types-list');
-    if (!container) return;
+    if (!container) {return;}
     container.innerHTML = '';
     const table = el('table', { class: 'table' });
     table.appendChild(el('thead', {}, el('tr', {}, el('th', {}, 'Libellé'), el('th', {}, 'Code'), el('th', {}, 'Actions'))));
@@ -133,13 +133,13 @@ async function loadTypesList() {
               {
                 class: 'btn small danger',
                 onclick: async () => {
-                  if (!confirm(`Supprimer le type "${t.label}" ?`)) return;
+                  if (!confirm(`Supprimer le type "${t.label}" ?`)) {return;}
                   try {
                     await deleteCardType(t.code);
                     await loadTypesList();
                   } catch (e) {
-                    if (e && e.status === 409) alert('Impossible: ce type est utilisé par au moins une demande.');
-                    else alert('Suppression impossible.');
+                    if (e && e.status === 409) {alert('Impossible: ce type est utilisé par au moins une demande.');}
+                    else {alert('Suppression impossible.');}
                   }
                 },
               },
@@ -204,7 +204,7 @@ async function loadUsers() {
             {
               class: 'btn danger',
               onclick: async () => {
-                if (!confirm('Supprimer cet utilisateur ?')) return;
+                if (!confirm('Supprimer cet utilisateur ?')) {return;}
                 try {
                   await fetch(`/api/users/${user.id}`, { method: 'DELETE', headers: authHeaders() });
                   await loadUsers();
@@ -317,7 +317,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
     document.addEventListener('click', (e) => {
-      if (!dropdown.classList.contains('open')) return;
+      if (!dropdown.classList.contains('open')) {return;}
       if (!dropdown.contains(e.target) && e.target !== toggle) {
         dropdown.classList.remove('open');
         toggle.setAttribute('aria-expanded', 'false');
@@ -326,7 +326,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   const ok = await ensureAuthOrRedirect();
-  if (!ok) return;
+  if (!ok) {return;}
 
   renderTopbarMenu();
 
@@ -344,7 +344,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     const logoForm = document.getElementById('logo-form');
-    if (logoForm) logoForm.addEventListener('submit', onLogoSubmit);
+    if (logoForm) {logoForm.addEventListener('submit', onLogoSubmit);}
 
     document.getElementById('add-type-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -362,7 +362,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     let creatingUser = false;
     document.getElementById('add-user-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (creatingUser) return;
+      if (creatingUser) {return;}
       creatingUser = true;
       const formEl = e.currentTarget;
       const submitBtn = formEl.querySelector('button[type="submit"]');
@@ -370,17 +370,17 @@ window.addEventListener('DOMContentLoaded', async () => {
       if (msgEl) { msgEl.textContent = ''; msgEl.className = 'msg'; }
       const data = Object.fromEntries(new FormData(formEl).entries());
       try {
-        if (submitBtn) submitBtn.disabled = true;
+        if (submitBtn) {submitBtn.disabled = true;}
         await addUser(data);
         formEl.reset();
         if (msgEl) { msgEl.textContent = 'Utilisateur créé ✔'; msgEl.className = 'msg success'; }
       } catch (err) {
         const txt = err && err.status === 409 ? 'Email déjà utilisé' : "Impossible de créer l'utilisateur";
         if (msgEl) { msgEl.textContent = txt; msgEl.className = 'msg error'; }
-        else alert(txt);
+        else {alert(txt);}
       } finally {
         creatingUser = false;
-        if (submitBtn) submitBtn.disabled = false;
+        if (submitBtn) {submitBtn.disabled = false;}
       }
     });
 

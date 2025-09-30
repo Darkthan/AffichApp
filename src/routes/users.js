@@ -8,29 +8,29 @@ router.use(requireAuth, requireRole('admin'));
 
 router.get('/', async (req, res) => {
   const users = await getAll();
-  res.json(users.map(({ passwordHash, ...u }) => u));
+  res.json(users.map(({ passwordHash: _passwordHash, ...u }) => u));
 });
 
 router.get('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+  if (Number.isNaN(id)) {return res.status(400).json({ error: 'Invalid id' });}
   const user = await getById(id);
-  if (!user) return res.status(404).json({ error: 'Not found' });
-  const { passwordHash, ...safe } = user;
+  if (!user) {return res.status(404).json({ error: 'Not found' });}
+  const { passwordHash: _passwordHash, ...safe } = user;
   res.json(safe);
 });
 
 router.patch('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+  if (Number.isNaN(id)) {return res.status(400).json({ error: 'Invalid id' });}
   const { name, email, role, password } = req.body || {};
-  if (role && !['admin', 'requester', 'appel'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
+  if (role && !['admin', 'requester', 'appel'].includes(role)) {return res.status(400).json({ error: 'Invalid role' });}
   try {
     const user = await update(id, { name, email, role, password });
-    if (!user) return res.status(404).json({ error: 'Not found' });
+    if (!user) {return res.status(404).json({ error: 'Not found' });}
     res.json(user);
   } catch (e) {
-    if (e.code === 'E_DUPLICATE_EMAIL') return res.status(409).json({ error: 'Email already exists' });
+    if (e.code === 'E_DUPLICATE_EMAIL') {return res.status(409).json({ error: 'Email already exists' });}
     console.error(e);
     res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -38,9 +38,9 @@ router.patch('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+  if (Number.isNaN(id)) {return res.status(400).json({ error: 'Invalid id' });}
   const ok = await remove(id);
-  if (!ok) return res.status(404).json({ error: 'Not found' });
+  if (!ok) {return res.status(404).json({ error: 'Not found' });}
   res.status(204).send();
 });
 

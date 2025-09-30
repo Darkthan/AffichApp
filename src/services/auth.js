@@ -20,7 +20,7 @@ function signToken(payload) {
 function verifyToken(token) {
   try {
     return jwt.verify(token, JWT_SECRET);
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }
