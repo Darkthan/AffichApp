@@ -63,3 +63,11 @@ th { color: var(--muted); font-weight: 600; }
 .icon-btn .icon-emoji { font-size: 18px; line-height: 1; display: inline-block; }
 .icon-btn:hover { color: var(--primary); background: transparent; }
 .icon-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* Suggestions dropdown */
+.suggest-wrapper { position: relative; }
+.suggest-box { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 24px rgba(0,0,0,0.30); z-index: 150; max-height: 240px; overflow: auto; }
+.suggest-item { padding: 8px 10px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.suggest-item:hover { background: #0b1220; }
+.suggest-name { font-weight: 600; }
+.suggest-type { color: var(--muted); font-size: 0.9rem; }

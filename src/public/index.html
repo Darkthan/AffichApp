@@ -48,7 +48,10 @@
           <div class="grid">
             <label>
               Nom du demandeur
-              <input type="text" name="applicantName" required />
+              <div class="suggest-wrapper">
+                <input type="text" name="applicantName" id="applicant-name" autocomplete="off" required />
+                <div id="applicant-suggest-box" class="suggest-box" hidden></div>
+              </div>
             </label>
             <label>
               Email (optionnel)

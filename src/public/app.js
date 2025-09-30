@@ -5,6 +5,7 @@ function getStoredToken() {
 }
 let authToken = getStoredToken();
 let cardTypesCache = [];
+let suggestionsCache = [];
 
 function authHeaders() {
   const headers = {};
@@ -140,6 +141,38 @@ async function updateStatus(id, status) {
   }
 }
 
+// Suggestions API and UI
+async function fetchSuggestions(q) {
+  const qp = q && q.trim() ? ('?q=' + encodeURIComponent(q.trim())) : '';
+  return fetchJSON('/api/requests/suggestions' + qp);
+}
+
+function typeLabelFromCode(code) {
+  const t = (cardTypesCache || []).find((x) => x.code === code);
+  return (t && t.label) || code || '';
+}
+
+function renderApplicantSuggestions(list, targetInput, typeSelect) {
+  const box = document.getElementById('applicant-suggest-box');
+  if (!box) {return;}
+  box.innerHTML = '';
+  if (!list || !list.length) { box.setAttribute('hidden', ''); return; }
+  list.slice(0, 5).forEach((s) => {
+    const item = el('div', { class: 'suggest-item' },
+      el('span', { class: 'suggest-name' }, s.name),
+      el('span', { class: 'suggest-type' }, typeLabelFromCode(s.cardType))
+    );
+    item.addEventListener('mousedown', (e) => { e.preventDefault(); });
+    item.addEventListener('click', () => {
+      if (targetInput) { targetInput.value = s.name; }
+      if (typeSelect && s.cardType) { typeSelect.value = s.cardType; }
+      box.setAttribute('hidden', '');
+    });
+    box.appendChild(item);
+  });
+  box.removeAttribute('hidden');
+}
+
 async function onSubmit(e) {
   e.preventDefault();
   const form = e.currentTarget;
@@ -239,6 +272,7 @@ function closeMenu() {
 
 async function refreshUI() {
   await loadCardTypes();
+  await loadSuggestions();
   if (window.currentUser) {
     if (window.currentUser.role !== 'appel') {
       await loadList();
@@ -260,6 +294,22 @@ async function loadCardTypes() {
     const select = document.getElementById('card-type-select');
     select.innerHTML = '<option value="">-- Choisir --</option>';
     types.forEach((t) => select.appendChild(el('option', { value: t.code }, t.label)));
+  } catch {}
+}
+
+async function loadSuggestions() {
+  try {
+    const list = await fetchJSON('/api/requests/suggestions');
+    suggestionsCache = Array.isArray(list) ? list : [];
+    const dl = document.getElementById('applicant-suggestions');
+    if (dl) {
+      dl.innerHTML = '';
+      suggestionsCache.forEach((s) => {
+        const opt = document.createElement('option');
+        opt.value = s.name;
+        dl.appendChild(opt);
+      });
+    }
   } catch {}
 }
 
@@ -301,6 +351,28 @@ window.addEventListener('DOMContentLoaded', async () => {
   const ok = await ensureAuthOrRedirect();
   if (!ok) {return;}
   document.getElementById('request-form').addEventListener('submit', onSubmit);
+  // Auto-select card type when picking a known applicant
+  const applicantInput = document.getElementById('applicant-name');
+  const typeSelect = document.getElementById('card-type-select');
+  if (applicantInput && typeSelect) {
+    const maybeAutofill = () => {
+      const v = (applicantInput.value || '').trim().toLowerCase();
+      if (!v) {return;}
+      const found = (suggestionsCache || []).find((s) => (s.name || '').toLowerCase() === v);
+      if (found && found.cardType) { typeSelect.value = found.cardType; }
+    };
+    const onInputSuggest = async () => {
+      const v = applicantInput.value || '';
+      try {
+        const list = await fetchSuggestions(v);
+        renderApplicantSuggestions(list, applicantInput, typeSelect);
+      } catch {}
+    };
+    applicantInput.addEventListener('input', onInputSuggest);
+    applicantInput.addEventListener('focus', onInputSuggest);
+    applicantInput.addEventListener('change', () => { maybeAutofill(); document.getElementById('applicant-suggest-box')?.setAttribute('hidden',''); });
+    applicantInput.addEventListener('blur', () => { setTimeout(() => document.getElementById('applicant-suggest-box')?.setAttribute('hidden',''), 100); });
+  }
   /* login form removed; standalone page */
   /*document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();

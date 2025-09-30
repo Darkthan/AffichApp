@@ -3,6 +3,7 @@ const { db } = require('../services/db');
 const { validateNewRequest, validateUpdateRequest, validateStatus } = require('../services/validator');
 const { requireAuth } = require('../middleware/auth');
 const { findByCode } = require('../services/cardTypes');
+const suggestions = require('../services/suggestions');
 
 const router = express.Router();
 
@@ -13,6 +14,36 @@ router.get('/', requireAuth, async (req, res, next) => {
     // Admins and 'appel' role can view all requests; others see only their own
     if (req.user.role === 'admin' || req.user.role === 'appel') {return res.json(items);}
     return res.json(items.filter((x) => x.ownerId === req.user.id));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/requests/suggestions?q=term -> top 5 closest matches
+router.get('/suggestions', requireAuth, async (req, res, next) => {
+  try {
+    const all = await suggestions.getAll();
+    const qRaw = (req.query.q || '').toString();
+    const q = qRaw.trim().toLowerCase();
+
+    const scoreOf = (name, count = 0) => {
+      if (!q) { return 10 + (count || 0); }
+      const n = (name || '').toString().trim().toLowerCase();
+      if (!n) { return -Infinity; }
+      const idx = n.indexOf(q);
+      if (idx === -1) { return -Infinity; }
+      // boost prefix matches and higher counts
+      const base = idx === 0 ? 100 : 60;
+      return base - idx + Math.min(20, count || 0);
+    };
+
+    const ranked = all
+      .map((x) => ({ ...x, _score: scoreOf(x.name, x.count) }))
+      .filter((x) => x._score !== -Infinity)
+      .sort((a, b) => b._score - a._score || (b.count || 0) - (a.count || 0));
+
+    const top = (q ? ranked.slice(0, 5) : all.slice(0, 5)).map((x) => ({ name: x.name, cardType: x.cardType }));
+    res.json(top);
   } catch (err) {
     next(err);
   }
@@ -122,6 +153,7 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
     if (req.user.role !== 'admin' && item.ownerId !== req.user.id) {return res.status(403).json({ error: 'Forbidden' });}
     const ok = await db.remove(id);
     if (!ok) {return res.status(404).json({ error: 'Not found' });}
+    try { await suggestions.addOrUpdate(item.applicantName, item.cardType); } catch {}
     res.status(204).send();
   } catch (err) {
     next(err);
