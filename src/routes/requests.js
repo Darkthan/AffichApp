@@ -1,6 +1,6 @@
 const express = require('express');
 const { db } = require('../services/db');
-const { validateNewRequest, validateStatus } = require('../services/validator');
+const { validateNewRequest, validateUpdateRequest, validateStatus } = require('../services/validator');
 const { requireAuth } = require('../middleware/auth');
 const { findByCode } = require('../services/cardTypes');
 
@@ -51,6 +51,44 @@ router.post('/', requireAuth, async (req, res, next) => {
     if (!type) {return res.status(400).json({ error: 'Unknown cardType' });}
     const created = await db.create(payload, req.user);
     res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/requests/:id (owner or admin) - update fields
+router.patch('/:id', requireAuth, async (req, res, next) => {
+  try {
+    // 'appel' role cannot edit requests
+    if (req.user.role === 'appel') {return res.status(403).json({ error: 'Forbidden' });}
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {return res.status(400).json({ error: 'Invalid id' });}
+    const item = await db.getById(id);
+    if (!item) {return res.status(404).json({ error: 'Not found' });}
+    // Only admin or owner
+    if (req.user.role !== 'admin' && item.ownerId !== req.user.id) {return res.status(403).json({ error: 'Forbidden' });}
+    const payload = req.body || {};
+    // Normalize and trim
+    const updates = {};
+    if (typeof payload.applicantName === 'string') { updates.applicantName = payload.applicantName.trim(); }
+    if (typeof payload.email === 'string' || payload.email === null) { updates.email = payload.email === null ? null : String(payload.email).trim(); }
+    if (typeof payload.cardType === 'string') { updates.cardType = payload.cardType.trim(); }
+    if (typeof payload.details === 'string' || payload.details === null) { updates.details = payload.details === null ? null : String(payload.details); }
+
+    // Remove empty strings for optional fields
+    if (updates.email === '') { delete updates.email; }
+    if (updates.details === '') { delete updates.details; }
+
+    const { valid, errors } = validateUpdateRequest(updates);
+    if (!valid) {return res.status(400).json({ error: 'Validation failed', details: errors });}
+    // If cardType is present, ensure it exists
+    if (updates.cardType) {
+      const type = await findByCode(updates.cardType);
+      if (!type) {return res.status(400).json({ error: 'Unknown cardType' });}
+    }
+    const updated = await db.updateFields(id, updates);
+    if (!updated) {return res.status(404).json({ error: 'Not found' });}
+    res.json(updated);
   } catch (err) {
     next(err);
   }

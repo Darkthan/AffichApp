@@ -72,6 +72,20 @@ async function updateStatus(id, status) {
   return items[idx];
 }
 
+async function updateFields(id, updates) {
+  const items = await readAll();
+  const idx = items.findIndex((x) => x.id === id);
+  if (idx === -1) {return null;}
+  const it = items[idx];
+  if (updates.applicantName !== undefined) { it.applicantName = updates.applicantName; }
+  if (updates.email !== undefined) { it.email = updates.email; }
+  if (updates.cardType !== undefined) { it.cardType = updates.cardType; }
+  if (updates.details !== undefined) { it.details = updates.details; }
+  it.updatedAt = new Date().toISOString();
+  await writeAll(items);
+  return it;
+}
+
 async function remove(id) {
   const items = await readAll();
   const idx = items.findIndex((x) => x.id === id);
@@ -81,6 +95,6 @@ async function remove(id) {
   return true;
 }
 
-const db = { getAll, getById, create, updateStatus, remove };
+const db = { getAll, getById, create, updateStatus, updateFields, remove };
 
 module.exports = { db };

@@ -4,6 +4,7 @@ function getStoredToken() {
   } catch { return ''; }
 }
 let authToken = getStoredToken();
+let cardTypesCache = [];
 
 function authHeaders() {
   const headers = {};
@@ -58,60 +59,47 @@ function renderList(items) {
   const isAdmin = window.currentUser && window.currentUser.role === 'admin';
   items.forEach((it) => {
     const isOwner = window.currentUser && window.currentUser.id === it.ownerId;
-    const actionsCell = isAdmin
-      ? el(
-          'div',
-          { class: 'btn-group' },
-          el(
-            'button',
-            { class: 'btn small info', onclick: async () => { await updateStatus(it.id, 'demande'); await loadList(); } },
-            'Demandé'
-          ),
-          el(
-            'button',
-            { class: 'btn small warn', onclick: async () => { await updateStatus(it.id, 'impression'); await loadList(); } },
-            "Impression"
-          ),
-          el(
-            'button',
-            { class: 'btn small', onclick: async () => { await updateStatus(it.id, 'disponible'); await loadList(); } },
-            'Disponible'
-          ),
-          el(
-            'button',
-            {
-              class: 'btn small danger',
-              onclick: async () => {
-                if (!confirm('Supprimer cette demande ?')) {return;}
-                try {
-                  await deleteRequest(it.id);
-                  await loadList();
-                } catch (e) {
-                  alert('Suppression impossible: ' + (e.message || ''));
-                }
-              },
+    const canDelete = isAdmin || isOwner;
+    const canEdit = isAdmin || isOwner;
+    const actions = [];
+    // Prepare edit icon button (we will append it LAST)
+    const iconEmoji = el('span', { class: 'icon-emoji', 'aria-hidden': 'true' }, '✏️');
+    const editAttrs = { class: 'icon-btn', title: canEdit ? 'Modifier' : 'Modification non autorisée', 'aria-label': 'Modifier' };
+    if (canEdit) { editAttrs.onclick = () => openEditDialog(it); } else { editAttrs.disabled = 'disabled'; }
+    const editButton = el('button', editAttrs, iconEmoji);
+    // Admin actions: status + delete
+    if (isAdmin) {
+      actions.push(
+        el('button', { class: 'btn small info', title: 'Marquer demandé', onclick: async () => { await updateStatus(it.id, 'demande'); await loadList(); } }, 'Demandé'),
+        el('button', { class: 'btn small warn', title: "Marquer impression", onclick: async () => { await updateStatus(it.id, 'impression'); await loadList(); } }, 'Impression'),
+        el('button', { class: 'btn small', title: 'Marquer disponible', onclick: async () => { await updateStatus(it.id, 'disponible'); await loadList(); } }, 'Disponible')
+      );
+    }
+    if (canDelete) {
+      // Force a line break before the delete button
+      actions.push(el('span', { class: 'flex-break' }));
+      actions.push(
+        el(
+          'button',
+          {
+            class: 'btn small danger',
+            title: 'Supprimer',
+            onclick: async () => {
+              if (!confirm('Supprimer cette demande ?')) {return;}
+              try {
+                await deleteRequest(it.id);
+                await loadList();
+              } catch (e) {
+                alert('Suppression impossible: ' + (e.message || ''));
+              }
             },
-            'Supprimer'
-          )
+          },
+          'Supprimer'
         )
-      : isOwner
-        ? el(
-            'button',
-            {
-              class: 'btn small danger',
-              onclick: async () => {
-                if (!confirm('Supprimer cette demande ?')) {return;}
-                try {
-                  await deleteRequest(it.id);
-                  await loadList();
-                } catch (e) {
-                  alert('Suppression impossible: ' + (e.message || ''));
-                }
-              },
-            },
-            'Supprimer'
-          )
-        : el('span', { class: 'muted' }, '—');
+      );
+    }
+    // Append edit pencil LAST
+    actions.push(editButton);
     tbody.appendChild(
       el(
         'tr',
@@ -121,7 +109,7 @@ function renderList(items) {
         el('td', {}, it.email && it.email.trim() ? it.email : '—'),
         el('td', {}, it.cardType),
         el('td', {}, statusLabel(it.status)),
-        el('td', {}, actionsCell)
+        el('td', {}, el('div', { class: 'btn-group' }, actions.length ? actions : el('span', { class: 'muted' }, '—')))
       )
     );
   });
@@ -268,6 +256,7 @@ async function refreshUI() {
 async function loadCardTypes() {
   try {
     const types = await fetchJSON('/api/card-types');
+    cardTypesCache = types;
     const select = document.getElementById('card-type-select');
     select.innerHTML = '<option value="">-- Choisir --</option>';
     types.forEach((t) => select.appendChild(el('option', { value: t.code }, t.label)));
@@ -400,3 +389,58 @@ async function onCallSubmit(e) {
   }
 }
 
+// --- Edit dialog for requests ---
+async function updateRequest(id, payload) {
+  return fetchJSON(`/api/requests/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+function openEditDialog(item) {
+  const backdrop = el('div', { class: 'modal-backdrop' });
+  const modal = el('div', { class: 'modal' });
+  const header = el('div', { class: 'modal-header' }, `Modifier la demande #${item.id}`);
+  const form = el('form', { class: 'modal-body' });
+  const nameInput = el('input', { type: 'text', value: item.applicantName, required: true });
+  const emailInput = el('input', { type: 'email', value: item.email || '' });
+  const typeSelect = el('select');
+  typeSelect.appendChild(el('option', { value: '' }, '-- Choisir --'));
+  (cardTypesCache || []).forEach((t) => typeSelect.appendChild(el('option', { value: t.code, selected: item.cardType === t.code ? 'selected' : undefined }, t.label)));
+  const detailsInput = el('textarea', { rows: '3' }, item.details || '');
+  form.append(
+    el('label', {}, 'Nom du demandeur', nameInput),
+    el('label', {}, 'Email', emailInput),
+    el('label', {}, 'Type de carte', typeSelect),
+    el('label', {}, 'Détails', detailsInput),
+  );
+  const footer = el('div', { class: 'modal-footer' },
+    el('button', { type: 'button', class: 'btn secondary', onclick: () => { document.body.removeChild(backdrop); } }, 'Annuler'),
+    el('button', { type: 'submit', class: 'btn' }, 'Enregistrer')
+  );
+  const msg = el('p', { class: 'msg', id: 'edit-msg' });
+  modal.append(header, form, footer, msg);
+  backdrop.appendChild(modal);
+  document.body.appendChild(backdrop);
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msg.textContent = '';
+    const payload = {
+      applicantName: nameInput.value.trim(),
+      email: emailInput.value.trim(),
+      cardType: typeSelect.value,
+      details: detailsInput.value,
+    };
+    if (!payload.applicantName) { msg.textContent = 'Nom requis.'; msg.className = 'msg error'; return; }
+    if (!payload.cardType) { msg.textContent = 'Type de carte requis.'; msg.className = 'msg error'; return; }
+    if (payload.email === '') { delete payload.email; }
+    if (payload.details !== undefined && payload.details.trim() === '') { payload.details = null; }
+    try {
+      await updateRequest(item.id, payload);
+      msg.textContent = 'Enregistré ✔'; msg.className = 'msg success';
+      document.body.removeChild(backdrop);
+      await loadList();
+    } catch (err) {
+      const reason = err && (err.message || (err.data && err.data.error)) ? ': ' + (err.message || err.data.error) : '';
+      msg.textContent = 'Échec de la mise à jour' + reason; msg.className = 'msg error';
+    }
+  });
+}

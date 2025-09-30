@@ -25,6 +25,31 @@ function validateNewRequest(payload) {
 // Status codes (French-friendly codes without accents)
 const allowedStatuses = ['demande', 'impression', 'disponible'];
 
+function validateUpdateRequest(payload) {
+  const errors = [];
+  if (!payload || typeof payload !== 'object') {
+    return { valid: false, errors: ['Payload manquant ou invalide'] };
+  }
+  const keys = Object.keys(payload);
+  if (keys.length === 0) {
+    return { valid: false, errors: ['Aucun champ à mettre à jour'] };
+  }
+  if (payload.applicantName !== undefined && !isNonEmptyString(payload.applicantName)) {
+    errors.push('applicantName requis si présent');
+  }
+  if (payload.email !== undefined) {
+    const emailVal = String(payload.email || '').trim();
+    if (emailVal && !isEmail(emailVal)) {errors.push('email invalide');}
+  }
+  if (payload.cardType !== undefined && !isNonEmptyString(payload.cardType)) {
+    errors.push('cardType requis si présent');
+  }
+  if (payload.details !== undefined && payload.details !== null && typeof payload.details !== 'string') {
+    errors.push('details doit être une chaîne si présent');
+  }
+  return { valid: errors.length === 0, errors };
+}
+
 function validateStatus(status) {
   const errors = [];
   if (!isNonEmptyString(status)) {errors.push('status requis');}
@@ -32,4 +57,4 @@ function validateStatus(status) {
   return { valid: errors.length === 0, errors };
 }
 
-module.exports = { validateNewRequest, validateStatus, allowedStatuses };
+module.exports = { validateNewRequest, validateUpdateRequest, validateStatus, allowedStatuses };
