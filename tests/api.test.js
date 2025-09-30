@@ -1,16 +1,36 @@
 const request = require('supertest');
+const fs = require('fs').promises;
+const path = require('path');
 const { createApp } = require('../src/app');
+const { seedAdminIfEmpty } = require('../src/services/users');
 
 describe('API smoke', () => {
   const app = createApp();
   let token;
+  let usersBackup;
 
   beforeAll(async () => {
+    // Backup and reset users.json to empty array to ensure clean test state
+    const usersFile = path.join(process.cwd(), 'data', 'users.json');
+    usersBackup = await fs.readFile(usersFile, 'utf-8').catch(() => '[]');
+    await fs.writeFile(usersFile, '[]', 'utf-8');
+
+    // Seed default admin with password 'admin123'
+    await seedAdminIfEmpty();
+
     // login with default admin seeded
     const res = await request(app).post('/api/auth/login').send({ email: 'admin@example.com', password: 'admin123' });
     expect(res.status).toBe(200);
     token = res.body.token;
     expect(token).toBeTruthy();
+  });
+
+  afterAll(async () => {
+    // Restore original users.json
+    const usersFile = path.join(process.cwd(), 'data', 'users.json');
+    if (usersBackup) {
+      await fs.writeFile(usersFile, usersBackup, 'utf-8');
+    }
   });
 
   it('GET /health returns ok', async () => {

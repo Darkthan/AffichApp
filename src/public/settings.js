@@ -1,0 +1,399 @@
+function getStoredToken() {
+  try {
+    return localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+  } catch { return ''; }
+}
+let authToken = getStoredToken();
+
+function authHeaders() {
+  const headers = {};
+  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+  return headers;
+}
+
+async function fetchJSON(url, options = {}) {
+  const base = options || {};
+  const headers = { ...(base.headers || {}) };
+  if (authToken && !headers['Authorization']) headers['Authorization'] = 'Bearer ' + authToken;
+  if (base.body != null && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  const res = await fetch(url, { ...base, headers });
+  let data = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) {
+    const msg = (data && (data.error || data.message)) || `HTTP ${res.status}`;
+    const err = new Error(msg);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+function el(tag, attrs = {}, ...children) {
+  const e = document.createElement(tag);
+  Object.entries(attrs).forEach(([k, v]) => {
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  });
+  children.flat().forEach((c) => {
+    if (c == null) return;
+    e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  });
+  return e;
+}
+
+function logout() {
+  authToken = '';
+  try { localStorage.removeItem('token'); } catch {}
+  try { sessionStorage.removeItem('token'); } catch {}
+  window.currentUser = null;
+  window.location.replace('/login.html');
+}
+
+async function ensureAuthOrRedirect() {
+  if (!authToken) {
+    window.location.replace('/login.html');
+    return false;
+  }
+  try {
+    const me = await fetchJSON('/api/auth/me');
+    window.currentUser = me.user;
+    return true;
+  } catch {
+    try { localStorage.removeItem('token'); } catch {}
+    window.location.replace('/login.html');
+    return false;
+  }
+}
+
+function renderTopbarMenu() {
+  const menu = document.getElementById('menu-dropdown');
+  if (!menu) return;
+  menu.innerHTML = '';
+  if (window.currentUser) {
+    const homeLink = el('a', { class: 'menu-item', href: '/' }, 'Accueil');
+    const logoutBtn = el('button', { class: 'menu-item', onclick: () => { closeMenu(); logout(); } }, 'Se déconnecter');
+    menu.append(homeLink, logoutBtn);
+  } else {
+    const loginLink = el('a', { class: 'menu-item', href: '/login.html' }, 'Se connecter');
+    menu.append(loginLink);
+  }
+}
+
+function closeMenu() {
+  const menu = document.getElementById('menu-dropdown');
+  const toggle = document.getElementById('menu-toggle');
+  if (menu) menu.classList.remove('open');
+  if (toggle) toggle.setAttribute('aria-expanded', 'false');
+}
+
+async function loadCardTypes() {
+  try {
+    const types = await fetchJSON('/api/card-types');
+    return types;
+  } catch { return []; }
+}
+
+async function addCardType(label) {
+  await fetchJSON('/api/card-types', { method: 'POST', body: JSON.stringify({ label }) });
+}
+
+async function deleteCardType(code) {
+  const res = await fetch(`/api/card-types/${encodeURIComponent(code)}`, { method: 'DELETE', headers: authHeaders() });
+  if (res.status === 409) {
+    const e = new Error('in_use');
+    e.status = 409;
+    throw e;
+  }
+  if (!res.ok) throw new Error('delete_failed');
+}
+
+async function loadTypesList() {
+  try {
+    const types = await loadCardTypes();
+    const container = document.getElementById('types-list');
+    if (!container) return;
+    container.innerHTML = '';
+    const table = el('table', { class: 'table' });
+    table.appendChild(el('thead', {}, el('tr', {}, el('th', {}, 'Libellé'), el('th', {}, 'Code'), el('th', {}, 'Actions'))));
+    const tbody = el('tbody');
+    types.forEach((t) => {
+      tbody.appendChild(
+        el(
+          'tr',
+          {},
+          el('td', {}, t.label),
+          el('td', {}, t.code),
+          el(
+            'td',
+            {},
+            el(
+              'button',
+              {
+                class: 'btn small danger',
+                onclick: async () => {
+                  if (!confirm(`Supprimer le type "${t.label}" ?`)) return;
+                  try {
+                    await deleteCardType(t.code);
+                    await loadTypesList();
+                  } catch (e) {
+                    if (e && e.status === 409) alert('Impossible: ce type est utilisé par au moins une demande.');
+                    else alert('Suppression impossible.');
+                  }
+                },
+              },
+              'Supprimer'
+            )
+          )
+        )
+      );
+    });
+    table.appendChild(tbody);
+    container.appendChild(table);
+  } catch {}
+}
+
+async function addUser(formData) {
+  const created = await fetchJSON('/api/auth/register', { method: 'POST', body: JSON.stringify(formData) });
+  try {
+    await loadUsers();
+  } catch (e) {
+    console.warn('Refresh users failed after create:', e);
+  }
+  return created;
+}
+
+async function loadUsers() {
+  try {
+    const users = await fetchJSON('/api/users');
+    const container = document.getElementById('users-list');
+    container.innerHTML = '';
+    const table = el('table', { class: 'table' });
+    table.appendChild(
+      el('thead', {}, el('tr', {}, el('th', {}, 'ID'), el('th', {}, 'Nom'), el('th', {}, 'Email'), el('th', {}, 'Role'), el('th', {}, 'Actions')))
+    );
+    const tbody = el('tbody');
+
+    function buildRow(user, editing = false) {
+      const row = el('tr');
+      const idTd = el('td', {}, String(user.id));
+      const nameTd = el('td');
+      const emailTd = el('td');
+      const roleTd = el('td');
+      const actionsTd = el('td', { class: 'user-actions-cell' });
+
+      if (!editing) {
+        nameTd.textContent = user.name;
+        emailTd.textContent = user.email;
+        roleTd.textContent = user.role;
+        actionsTd.append(
+          el(
+            'button',
+            {
+              class: 'btn',
+              onclick: () => {
+                row.replaceWith(buildRow(user, true));
+              },
+            },
+            'Modifier'
+          ),
+          ' ',
+          el(
+            'button',
+            {
+              class: 'btn danger',
+              onclick: async () => {
+                if (!confirm('Supprimer cet utilisateur ?')) return;
+                try {
+                  await fetch(`/api/users/${user.id}`, { method: 'DELETE', headers: authHeaders() });
+                  await loadUsers();
+                } catch {
+                  alert("Echec de la suppression de l'utilisateur");
+                }
+              },
+            },
+            'Supprimer'
+          )
+        );
+      } else {
+        const nameInput = el('input', { type: 'text', value: user.name });
+        const emailInput = el('input', { type: 'email', value: user.email });
+        const roleSelect = el(
+          'select',
+          {},
+          el('option', { value: 'requester' }, 'Demandeur'),
+          el('option', { value: 'admin' }, 'Administrateur'),
+          el('option', { value: 'appel' }, 'Appel')
+        );
+        roleSelect.value = user.role;
+        nameTd.append(nameInput);
+        emailTd.append(emailInput);
+        roleTd.append(roleSelect);
+
+        const pwdInput = el('input', { type: 'password', placeholder: 'Nouveau mot de passe (optionnel)', class: 'user-pwd-input' });
+        actionsTd.append(
+          pwdInput,
+          ' ',
+          el(
+            'button',
+            {
+              class: 'btn small',
+              onclick: async () => {
+                try {
+                  const name = nameInput.value.trim();
+                  const email = emailInput.value.trim();
+                  const role = roleSelect.value;
+                  const password = pwdInput.value || '';
+                  await fetchJSON(`/api/users/${user.id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ name, email, role, password }),
+                  });
+                  await loadUsers();
+                } catch {
+                  alert("Echec de la mise à jour de l'utilisateur");
+                }
+              },
+            },
+            'Enregistrer'
+          ),
+          ' ',
+          el(
+            'button',
+            {
+              class: 'btn small danger',
+              onclick: () => {
+                row.replaceWith(buildRow(user, false));
+              },
+            },
+            'Annuler'
+          )
+        );
+      }
+
+      row.append(idTd, nameTd, emailTd, roleTd, actionsTd);
+      return row;
+    }
+
+    users.forEach((u) => tbody.appendChild(buildRow(u, false)));
+    table.appendChild(tbody);
+    container.appendChild(table);
+  } catch {}
+}
+
+async function onLogoSubmit(e) {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const msg = document.getElementById('logo-msg');
+  if (msg) { msg.textContent = ''; msg.className = 'msg'; }
+  const file = form.logo && form.logo.files && form.logo.files[0];
+  if (!file) { if (msg) { msg.textContent = 'Sélectionnez un fichier image'; msg.className = 'msg error'; } return; }
+  if (!['image/png','image/jpeg','image/webp'].includes(file.type)) {
+    if (msg) { msg.textContent = 'Type non supporté (PNG, JPEG, WEBP)'; msg.className = 'msg error'; }
+    return;
+  }
+  if (file.size > 4 * 1024 * 1024) { if (msg) { msg.textContent = 'Fichier trop volumineux (> 4MB)'; msg.className = 'msg error'; } return; }
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      await fetchJSON('/api/settings/logo', { method: 'POST', body: JSON.stringify({ data: reader.result }) });
+      if (msg) { msg.textContent = 'Logo mis à jour ✔'; msg.className = 'msg success'; }
+    } catch (err) {
+      const reason = err && err.message ? ' (' + err.message + ')' : '';
+      if (msg) { msg.textContent = 'Echec du téléversement' + reason; msg.className = 'msg error'; }
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  // Menu toggle
+  const toggle = document.getElementById('menu-toggle');
+  const dropdown = document.getElementById('menu-dropdown');
+  if (toggle && dropdown) {
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dropdown.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    document.addEventListener('click', (e) => {
+      if (!dropdown.classList.contains('open')) return;
+      if (!dropdown.contains(e.target) && e.target !== toggle) {
+        dropdown.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  const ok = await ensureAuthOrRedirect();
+  if (!ok) return;
+
+  renderTopbarMenu();
+
+  const adminPanel = document.getElementById('admin-panel');
+  const nonAdminPanel = document.getElementById('non-admin-panel');
+
+  if (window.currentUser && window.currentUser.role === 'admin') {
+    if (adminPanel) {
+      adminPanel.classList.remove('hidden');
+      adminPanel.removeAttribute('hidden');
+    }
+    if (nonAdminPanel) {
+      nonAdminPanel.classList.add('hidden');
+      nonAdminPanel.setAttribute('hidden', '');
+    }
+
+    const logoForm = document.getElementById('logo-form');
+    if (logoForm) logoForm.addEventListener('submit', onLogoSubmit);
+
+    document.getElementById('add-type-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formEl = e.currentTarget;
+      const label = new FormData(formEl).get('label');
+      try {
+        await addCardType(label);
+        await loadTypesList();
+        formEl.reset();
+      } catch (err) {
+        alert("Impossible d'ajouter le type: " + (err.message || ''));
+      }
+    });
+
+    let creatingUser = false;
+    document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (creatingUser) return;
+      creatingUser = true;
+      const formEl = e.currentTarget;
+      const submitBtn = formEl.querySelector('button[type="submit"]');
+      const msgEl = document.getElementById('add-user-msg');
+      if (msgEl) { msgEl.textContent = ''; msgEl.className = 'msg'; }
+      const data = Object.fromEntries(new FormData(formEl).entries());
+      try {
+        if (submitBtn) submitBtn.disabled = true;
+        await addUser(data);
+        formEl.reset();
+        if (msgEl) { msgEl.textContent = 'Utilisateur créé ✔'; msgEl.className = 'msg success'; }
+      } catch (err) {
+        const txt = err && err.status === 409 ? 'Email déjà utilisé' : "Impossible de créer l'utilisateur";
+        if (msgEl) { msgEl.textContent = txt; msgEl.className = 'msg error'; }
+        else alert(txt);
+      } finally {
+        creatingUser = false;
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+
+    await loadUsers();
+    await loadTypesList();
+  } else {
+    if (adminPanel) {
+      adminPanel.classList.add('hidden');
+      adminPanel.setAttribute('hidden', '');
+    }
+    if (nonAdminPanel) {
+      nonAdminPanel.classList.remove('hidden');
+      nonAdminPanel.removeAttribute('hidden');
+    }
+  }
+});

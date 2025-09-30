@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "name": "admin",
+    "email": "admin@example.com",
+    "role": "admin",
+    "passwordHash": "$2b$10$.YoYF9M2HQDSQ/ElppqCPeO/0.Ty5t95bKr6aKF24eEtIYp79yLFS",
+    "createdAt": "2025-08-18T12:34:34.680Z",
+    "updatedAt": "2025-08-21T09:51:51.274Z"
+  },
+  {
+    "id": 2,
+    "name": "accueil",
+    "email": "accueil@beaupeyrat.fr",
+    "role": "requester",
+    "passwordHash": "$2b$10$tEm42i5BBNOloraSrifDGuWwGPxDo1FOeQsMBCMWbxzYlXtVmrKWm",
+    "createdAt": "2025-08-19T06:49:28.114Z",
+    "updatedAt": "2025-08-21T09:27:22.371Z"
+  },
+  {
+    "id": 3,
+    "name": "viescolaire",
+    "email": "viescolaire@beaupeyrat.fr",
+    "role": "appel",
+    "passwordHash": "$2b$10$Wtgqw.lt/lXDgEmdQmSuEe8Ry/2XL8XXXKzLHj2PajnPMQHJZLUPu",
+    "createdAt": "2025-08-20T07:16:14.039Z",
+    "updatedAt": "2025-08-20T07:16:14.039Z"
+  }
+]

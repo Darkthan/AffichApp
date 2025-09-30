@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Paramètres - Application Demandes de Cartes</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-left brand">
+        <img src="/public/logo" alt="Logo" class="brand-logo" onerror="this.style.display='none'" />
+        <span class="brand-title">Demandes de Cartes</span>
+      </div>
+      <div class="topbar-right">
+        <a href="/" class="icon-button" title="Retour à l'accueil">←</a>
+        <button id="menu-toggle" class="icon-button" aria-haspopup="true" aria-expanded="false" title="Menu">
+          ⚙️
+        </button>
+        <div id="menu-dropdown" class="menu-dropdown" role="menu" aria-hidden="true">
+          <!-- Items injectés par settings.js -->
+        </div>
+      </div>
+    </header>
+    <main class="container">
+      <h1>Paramètres</h1>
+
+      <section class="card hidden" id="admin-panel" hidden>
+        <h2>Administration</h2>
+        <h3>Logo d'affichage</h3>
+        <form id="logo-form" class="inline" enctype="multipart/form-data">
+          <input type="file" name="logo" accept="image/png, image/jpeg, image/webp" required />
+          <button type="submit">Téléverser le logo</button>
+          <p id="logo-msg" class="msg"></p>
+        </form>
+        <h3>Ajouter un type de carte</h3>
+        <form id="add-type-form" class="inline">
+          <input type="text" name="label" placeholder="Libellé (ex: Visiteurs)" required />
+          <button type="submit">Ajouter</button>
+        </form>
+        <h3>Types existants</h3>
+        <div id="types-list"></div>
+        <h3>Utilisateurs</h3>
+        <form id="add-user-form" class="grid">
+          <input type="text" name="name" placeholder="Nom" required />
+          <input type="email" name="email" placeholder="Email" required />
+          <select name="role" required>
+            <option value="requester">Demandeur</option>
+            <option value="admin">Administrateur</option>
+            <option value="appel">Appel</option>
+          </select>
+          <input type="password" name="password" placeholder="Mot de passe" required />
+          <button type="submit">Créer l'utilisateur</button>
+          <p id="add-user-msg" class="msg"></p>
+        </form>
+        <div id="users-list"></div>
+      </section>
+
+      <section class="card" id="non-admin-panel" hidden>
+        <p class="muted">Aucun paramètre disponible pour votre rôle.</p>
+      </section>
+    </main>
+
+    <script src="/settings.js" defer></script>
+  </body>
+</html>

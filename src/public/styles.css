@@ -37,3 +37,14 @@ th { color: var(--muted); font-weight: 600; }
 .inline { display: flex; gap: 8px; flex-wrap: wrap; }
 .user-actions-cell { display: flex; align-items: center; gap: 10px; min-width: 420px; }
 .user-actions-cell .user-pwd-input { min-width: 240px; }
+
+/* Topbar */
+.topbar { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; background: var(--card); border-bottom: 1px solid var(--border); padding: 8px 16px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo { height: 32px; width: auto; object-fit: contain; }
+.brand-title { font-weight: 700; }
+.icon-button { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.menu-dropdown { position: absolute; right: 16px; top: 56px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px; min-width: 220px; box-shadow: 0 10px 24px rgba(0,0,0,0.30); display: none; }
+.menu-dropdown.open { display: block; }
+.menu-item { width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 10px 12px; border-radius: 8px; cursor: pointer; display: block; }
+.menu-item:hover { background: #0b1220; }
