@@ -625,6 +625,45 @@ async function loadBannedIps() {
   }
 }
 
+// === WEBAUTHN CONFIG ===
+async function loadWebAuthnConfig() {
+  try {
+    const config = await fetchJSON('/api/settings/webauthn');
+    document.getElementById('webauthn-rp-name').value = config.rpName || '';
+    document.getElementById('webauthn-rp-id').value = config.rpID || '';
+    document.getElementById('webauthn-origin').value = config.origin || '';
+  } catch (e) {
+    console.error('Erreur chargement config WebAuthn:', e);
+  }
+}
+
+const webauthnConfigForm = document.getElementById('webauthn-config-form');
+if (webauthnConfigForm) {
+  loadWebAuthnConfig();
+
+  webauthnConfigForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('webauthn-config-msg');
+    msg.textContent = '';
+
+    const rpName = document.getElementById('webauthn-rp-name').value.trim();
+    const rpID = document.getElementById('webauthn-rp-id').value.trim();
+    const origin = document.getElementById('webauthn-origin').value.trim();
+
+    try {
+      await fetchJSON('/api/settings/webauthn', {
+        method: 'PATCH',
+        body: JSON.stringify({ rpName, rpID, origin })
+      });
+      msg.textContent = '✓ Configuration WebAuthn sauvegardée';
+      msg.className = 'msg success';
+    } catch (e) {
+      msg.textContent = '✗ ' + e.message;
+      msg.className = 'msg error';
+    }
+  });
+}
+
 const fail2banConfigForm = document.getElementById('fail2ban-config-form');
 if (fail2banConfigForm) {
   fail2banConfigForm.addEventListener('submit', async (e) => {

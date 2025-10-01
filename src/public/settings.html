@@ -112,6 +112,30 @@
             <button id="refresh-banned-ips" class="btn">Actualiser</button>
           </div>
 
+          <h3>Configuration WebAuthn/Passkeys</h3>
+          <p class="small muted">Configurez les paramètres WebAuthn pour activer les passkeys en production.</p>
+          <form id="webauthn-config-form" class="grid">
+            <label>
+              RP Name (Nom de l'application)
+              <input type="text" id="webauthn-rp-name" placeholder="Application Demandes Cartes" />
+              <span class="small muted">Nom affiché lors de l'enregistrement d'une passkey</span>
+            </label>
+            <label>
+              RP ID (Domaine)
+              <input type="text" id="webauthn-rp-id" placeholder="affichapp.beaupeyrat.com" />
+              <span class="small muted">Domaine principal (sans sous-domaine ni port)</span>
+            </label>
+            <label>
+              Origin (URL complète)
+              <input type="text" id="webauthn-origin" placeholder="https://affichapp.beaupeyrat.com" />
+              <span class="small muted">URL complète avec https:// (sans / à la fin)</span>
+            </label>
+            <div class="form-actions">
+              <button type="submit">Sauvegarder</button>
+            </div>
+            <p id="webauthn-config-msg" class="msg"></p>
+          </form>
+
           <h3>Gestion des Passkeys (Admin)</h3>
           <p class="small muted">Visualisez et supprimez les passkeys de tous les utilisateurs.</p>
           <div id="all-passkeys-list"></div>
