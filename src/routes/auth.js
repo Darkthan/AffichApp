@@ -3,6 +3,7 @@ const rateLimit = require('express-rate-limit');
 const { getByEmail, create, seedAdminIfEmpty } = require('../services/users');
 const { verifyPassword, signToken } = require('../services/auth');
 const { requireAuth } = require('../middleware/auth');
+const fail2ban = require('../services/fail2ban');
 
 const router = express.Router();
 
@@ -16,10 +17,34 @@ seedAdminIfEmpty().catch((e) => console.error('Admin seed error:', e));
 router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {return res.status(400).json({ error: 'email and password required' });}
+
+  // Vérifier si l'IP est bannie
+  const clientIp = req.ip || req.connection.remoteAddress;
+  const bannedUntil = fail2ban.isBanned(clientIp);
+  if (bannedUntil) {
+    const remainingMinutes = Math.ceil((bannedUntil - Date.now()) / 60000);
+    return res.status(403).json({
+      error: 'Too many failed attempts',
+      message: `Votre IP est temporairement bloquée. Réessayez dans ${remainingMinutes} minute(s).`,
+      bannedUntil
+    });
+  }
+
   const user = await getByEmail(email);
-  if (!user) {return res.status(401).json({ error: 'Invalid credentials' });}
+  if (!user) {
+    fail2ban.recordFailedAttempt(clientIp);
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
   const ok = await verifyPassword(password, user.passwordHash);
-  if (!ok) {return res.status(401).json({ error: 'Invalid credentials' });}
+  if (!ok) {
+    fail2ban.recordFailedAttempt(clientIp);
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  // Connexion réussie, réinitialiser les tentatives
+  fail2ban.resetAttempts(clientIp);
+
   const token = signToken({ sub: user.id, role: user.role });
   res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
 });

@@ -580,3 +580,86 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
 });
+
+// === FAIL2BAN MANAGEMENT ===
+async function loadFail2BanConfig() {
+  try {
+    const config = await fetchJSON('/api/fail2ban/config', { method: 'GET' });
+    document.getElementById('fail2ban-enabled').checked = config.enabled;
+    document.getElementById('fail2ban-max-attempts').value = config.maxAttempts || 5;
+    document.getElementById('fail2ban-ban-duration').value = config.banDuration || 15;
+  } catch (e) {
+    console.error('Erreur chargement config fail2ban:', e);
+  }
+}
+
+async function loadBannedIps() {
+  try {
+    const banned = await fetchJSON('/api/fail2ban/banned', { method: 'GET' });
+    const container = document.getElementById('banned-ips-list');
+
+    if (banned.length === 0) {
+      container.innerHTML = '<p class="muted">Aucune IP bannie actuellement.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    banned.forEach((record) => {
+      const div = el('div', { class: 'user-item' },
+        el('span', {}, `IP: ${record.ip} - Banni jusqu'à ${new Date(record.bannedUntil).toLocaleString()} (${record.attempts} tentatives)`),
+        el('button', { class: 'btn danger small' }, 'Débannir')
+      );
+
+      div.querySelector('button').addEventListener('click', async () => {
+        if (!confirm(`Débannir l'IP ${record.ip} ?`)) {return;}
+        try {
+          await fetchJSON(`/api/fail2ban/banned/${encodeURIComponent(record.ip)}`, { method: 'DELETE' });
+          loadBannedIps();
+        } catch (e) {
+          alert('Erreur débannissement: ' + e.message);
+        }
+      });
+
+      container.appendChild(div);
+    });
+  } catch (e) {
+    console.error('Erreur chargement IPs bannies:', e);
+  }
+}
+
+const fail2banConfigForm = document.getElementById('fail2ban-config-form');
+if (fail2banConfigForm) {
+  fail2banConfigForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('fail2ban-config-msg');
+    msg.textContent = '';
+
+    const enabled = document.getElementById('fail2ban-enabled').checked;
+    const maxAttempts = parseInt(document.getElementById('fail2ban-max-attempts').value, 10);
+    const banDuration = parseInt(document.getElementById('fail2ban-ban-duration').value, 10);
+
+    try {
+      await fetchJSON('/api/fail2ban/config', {
+        method: 'PATCH',
+        body: JSON.stringify({ enabled, maxAttempts, banDuration })
+      });
+      msg.textContent = '✓ Configuration sauvegardée';
+      msg.className = 'msg success';
+    } catch (e) {
+      msg.textContent = '✗ ' + e.message;
+      msg.className = 'msg error';
+    }
+  });
+}
+
+const refreshBannedBtn = document.getElementById('refresh-banned-ips');
+if (refreshBannedBtn) {
+  refreshBannedBtn.addEventListener('click', loadBannedIps);
+}
+
+// Charger la config fail2ban au démarrage si admin
+const adminPanelCheck = document.getElementById('admin-panel');
+if (adminPanelCheck && !adminPanelCheck.hidden) {
+  loadFail2BanConfig();
+  loadBannedIps();
+}

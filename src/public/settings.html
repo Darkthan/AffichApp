@@ -68,6 +68,32 @@
           <p id="add-user-msg" class="msg"></p>
         </form>
         <div id="users-list"></div>
+
+        <h3>Protection Fail2Ban</h3>
+        <p class="small muted">Configuration de la protection contre les tentatives de connexion répétées.</p>
+        <form id="fail2ban-config-form" class="grid">
+          <label>
+            <input type="checkbox" id="fail2ban-enabled" />
+            Activer la protection Fail2Ban
+          </label>
+          <label>
+            Nombre maximum de tentatives:
+            <input type="number" id="fail2ban-max-attempts" min="1" max="50" value="5" required />
+          </label>
+          <label>
+            Durée du bannissement (minutes):
+            <input type="number" id="fail2ban-ban-duration" min="1" max="1440" value="15" required />
+          </label>
+          <button type="submit">Sauvegarder la configuration</button>
+          <p id="fail2ban-config-msg" class="msg"></p>
+        </form>
+
+        <h3>IPs bannies</h3>
+        <p class="small muted">Liste des adresses IP actuellement bloquées.</p>
+        <div id="banned-ips-list"></div>
+        <div class="inline">
+          <button id="refresh-banned-ips" class="btn">Actualiser</button>
+        </div>
       </section>
 
       <section class="card" id="notifications-panel" hidden>
