@@ -377,11 +377,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   const toggle = document.getElementById('menu-toggle');
   const dropdown = document.getElementById('menu-dropdown');
   const logo = document.querySelector('.brand-logo');
-  if (logo) {
-    logo.style.cursor = 'pointer';
-    logo.title = "Retour à l'accueil";
-    logo.addEventListener('click', (e) => { e.preventDefault(); window.location.assign('/'); });
-  }
+  const titleEl = document.querySelector('.brand-title');
+  const goHome = (e) => { e.preventDefault(); window.location.assign('/'); };
+  if (logo) { logo.style.cursor = 'pointer'; logo.title = "Retour à l'accueil"; logo.addEventListener('click', goHome); }
+  if (titleEl) { titleEl.style.cursor = 'pointer'; titleEl.title = "Retour à l'accueil"; titleEl.addEventListener('click', goHome); }
   if (toggle && dropdown) {
     toggle.addEventListener('click', (e) => {
       e.stopPropagation();
