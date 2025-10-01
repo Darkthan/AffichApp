@@ -4,38 +4,43 @@ const { getByEmail, create, seedAdminIfEmpty } = require('../services/users');
 const { verifyPassword, signToken } = require('../services/auth');
 const { requireAuth } = require('../middleware/auth');
 const fail2ban = require('../services/fail2ban');
+const { getClientIp } = require('../utils/ip');
 
 const router = express.Router();
 
 // Rate limiters for auth-sensitive routes
-const loginLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false });
-const passwordChangeLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false });
+// Utilise getClientIp pour gérer correctement les reverse proxies
+const loginLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => getClientIp(req)
+});
+const passwordChangeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => getClientIp(req)
+});
 
 // Ensure admin seed on startup of this router
 seedAdminIfEmpty().catch((e) => console.error('Admin seed error:', e));
-
-// Fonction pour normaliser l'IP (convertir IPv6 mapped IPv4 en IPv4)
-function normalizeIp(ip) {
-  if (!ip) {return 'unknown';}
-  // Convertir ::ffff:127.0.0.1 en 127.0.0.1
-  if (ip.startsWith('::ffff:')) {
-    return ip.substring(7);
-  }
-  // Convertir ::1 (localhost IPv6) en 127.0.0.1
-  if (ip === '::1') {
-    return '127.0.0.1';
-  }
-  return ip;
-}
 
 router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {return res.status(400).json({ error: 'email and password required' });}
 
-  // Vérifier si l'IP est bannie
-  const rawIp = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
-  const clientIp = normalizeIp(rawIp);
-  console.log(`[fail2ban] Tentative de connexion depuis ${clientIp} (raw: ${rawIp})`);
+  // Vérifier si l'IP est bannie - utilise getClientIp pour gérer les reverse proxies
+  const clientIp = getClientIp(req);
+  const headers = {
+    'x-forwarded-for': req.headers['x-forwarded-for'],
+    'x-real-ip': req.headers['x-real-ip'],
+    'cf-connecting-ip': req.headers['cf-connecting-ip']
+  };
+  console.log(`[fail2ban] Tentative de connexion depuis ${clientIp}`,
+    `(req.ip: ${req.ip}, headers:`, JSON.stringify(headers), ')');
 
   const bannedUntil = fail2ban.isBanned(clientIp);
   if (bannedUntil) {

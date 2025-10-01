@@ -16,6 +16,11 @@ const { router: fail2banRouter } = require('./routes/fail2ban');
 function createApp() {
   const app = express();
 
+  // Trust proxy: permet à Express de lire X-Forwarded-* headers
+  // En production avec reverse proxy (nginx, apache, cloudflare, etc.)
+  // 'true' fait confiance au premier hop, ou spécifiez le nombre de proxies
+  app.set('trust proxy', true);
+
   // Basic hardening headers (no HSTS to avoid HTTPS forcing during tests)
   app.use(helmet({ hsts: false }));
 

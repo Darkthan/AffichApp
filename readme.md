@@ -186,16 +186,57 @@ ApplicationDemandesCartes/
 
 ## 🔐 Sécurité
 
-- JWT signé (expiration 7j). Ne laissez pas `JWT_SECRET` par défaut en production.
-- Mots de passe hachés (bcrypt).
-- Changement de mot de passe: endpoint protégé (JWT) + rate limiting.
-- En-têtes de sécurité via Helmet.
+- **JWT signé** (expiration 7j). Le secret est auto-généré en dev (`data/.jwt-secret`), **OBLIGATOIRE** en prod via `JWT_SECRET`.
+- **Mots de passe hachés** (bcrypt).
+- **Protection CSRF**: header `X-Requested-With: XMLHttpRequest` requis pour POST/PATCH/DELETE.
+- **Fail2Ban intégré**: bannissement automatique après tentatives de connexion échouées (configurable via interface admin).
+- **Rate limiting**: endpoints sensibles protégés (login, changement mot de passe).
+- **En-têtes de sécurité** via Helmet.
 - Pas de 2FA ni de critères complexes par défaut (volontairement simplifié).
-- Recommandations prod:
-  - Forcer HTTPS (proxy/ingress) et un `JWT_SECRET` robuste.
-  - Conserver le domaine en même origine pour le front et l’API.
-  - Ajuster les limites de rate limiting selon votre trafic.
-  - Restreindre l’accès public aux seules routes `/public/*` et aux assets statiques.
+
+### 🌐 Configuration Reverse Proxy
+
+L'application détecte automatiquement l'IP réelle du client derrière un reverse proxy via les headers suivants (dans l'ordre de priorité):
+1. `X-Forwarded-For` (standard)
+2. `X-Real-IP` (nginx)
+3. `CF-Connecting-IP` (Cloudflare)
+4. `X-Client-IP` (autres)
+
+**Configuration Express**: `app.set('trust proxy', true)` est activé par défaut.
+
+#### Exemple nginx:
+```nginx
+location / {
+    proxy_pass http://localhost:3000;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header Host $host;
+}
+```
+
+#### Exemple Apache:
+```apache
+<VirtualHost *:80>
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-For %{REMOTE_ADDR}s
+    ProxyPass / http://localhost:3000/
+    ProxyPassReverse / http://localhost:3000/
+</VirtualHost>
+```
+
+### 🛡️ Fail2Ban
+
+- **Configuration**: interface admin → section "Protection Fail2Ban"
+- **Paramètres par défaut**: 5 tentatives max, bannissement 15 minutes
+- **Gestion**: voir les IPs bannies et débannir manuellement
+- **Rate limiting et Fail2Ban** utilisent tous deux la vraie IP client (gestion automatique des proxies)
+
+### Recommandations production:
+  - Forcer HTTPS (proxy/ingress) et un `JWT_SECRET` robuste (généré via `openssl rand -base64 64`).
+  - Conserver le domaine en même origine pour le front et l'API.
+  - Ajuster les limites de rate limiting et fail2ban selon votre trafic.
+  - Restreindre l'accès public aux seules routes `/public/*` et aux assets statiques.
+  - Configurer correctement le reverse proxy pour transmettre les headers d'IP.
 
 ## 📅 Roadmap (idées)
 
