@@ -663,3 +663,11 @@ if (adminPanelCheck && !adminPanelCheck.hidden) {
   loadFail2BanConfig();
   loadBannedIps();
 }
+
+// Gérer l'erreur de chargement du logo (masquer si inexistant)
+const headerLogo = document.getElementById('header-logo');
+if (headerLogo) {
+  headerLogo.addEventListener('error', () => {
+    headerLogo.style.display = 'none';
+  });
+}

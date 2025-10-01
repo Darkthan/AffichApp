@@ -8,12 +8,6 @@ let cardTypesCache = [];
 let suggestionsCache = [];
 let esRequests = null;
 
-function authHeaders() {
-  const headers = {};
-  if (authToken) {headers['Authorization'] = 'Bearer ' + authToken;}
-  return headers;
-}
-
 async function fetchJSON(url, options = {}) {
   const base = options || {};
   const headers = { ...(base.headers || {}) };
@@ -122,8 +116,7 @@ function renderList(items) {
 }
 
 async function deleteRequest(id) {
-  const res = await fetch(`/api/requests/${id}`, { method: 'DELETE', headers: authHeaders() });
-  if (!res.ok) {throw new Error('Delete failed');}
+  await fetchJSON(`/api/requests/${id}`, { method: 'DELETE' });
 }
 
 async function loadList() {
@@ -464,8 +457,7 @@ async function createCall(data) {
 }
 
 async function deleteCall(id) {
-  const res = await fetch(`/api/calls/${id}`, { method: 'DELETE', headers: authHeaders() });
-  if (!res.ok) {throw new Error('Delete failed');}
+  await fetchJSON(`/api/calls/${id}`, { method: 'DELETE' });
 }
 
 function renderCalls(items) {
@@ -572,3 +564,13 @@ function openEditDialog(item) {
     }
   });
 }
+
+// Gérer l'erreur de chargement du logo (masquer si inexistant)
+window.addEventListener('DOMContentLoaded', () => {
+  const headerLogo = document.getElementById('header-logo');
+  if (headerLogo) {
+    headerLogo.addEventListener('error', () => {
+      headerLogo.style.display = 'none';
+    });
+  }
+});

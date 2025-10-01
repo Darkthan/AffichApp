@@ -107,3 +107,11 @@ function adjustScaleToViewport() {
     container.style.width = `${100 / scale}%`;
   }
 }
+
+// Gérer l'erreur de chargement du logo (masquer si inexistant)
+const logo = document.getElementById('logo');
+if (logo) {
+  logo.addEventListener('error', () => {
+    logo.style.display = 'none';
+  });
+}
