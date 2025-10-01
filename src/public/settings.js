@@ -545,36 +545,34 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     // Dev: generate VAPID keys (admin only, non-production)
     const genBtn = document.getElementById('gen-vapid-btn');
-    const out = document.getElementById('vapid-output');
-    if (genBtn && out) {
+    if (genBtn) {
       genBtn.addEventListener('click', async () => {
-        out.textContent = '';
+        if (msg) { msg.textContent = ''; msg.className = 'msg'; }
         try {
           const res = await fetch('/api/notifications/generate-vapid', { headers: authHeaders() });
           if (!res.ok) {
-            out.textContent = "Génération indisponible (production ou droits insuffisants).";
+            if (msg) { msg.textContent = 'Génération indisponible (production ou droits insuffisants).'; msg.className = 'msg error'; }
             return;
           }
           const data = await res.json();
-          out.textContent = `VAPID_PUBLIC_KEY=${data.publicKey}\nVAPID_PRIVATE_KEY=${data.privateKey}\nVAPID_SUBJECT=${data.subject}\n\n${data.note || ''}`;
+          if (msg) { msg.textContent = 'Clés VAPID générées (dev). Copiez-les pour configurer votre serveur.'; msg.className = 'msg success'; }
         } catch {
-          out.textContent = "Erreur lors de la génération des clés.";
+          if (msg) { msg.textContent = 'Erreur lors de la génération des clés.'; msg.className = 'msg error'; }
         }
       });
     }
 
     const genProdBtn = document.getElementById('gen-vapid-prod-btn');
-    if (genProdBtn && out) {
+    if (genProdBtn) {
       genProdBtn.addEventListener('click', async () => {
-        out.textContent = '';
         if (!confirm('Confirmer la génération et l\'installation de nouvelles clés VAPID sur ce serveur ?')) { return; }
         try {
           const res = await fetch('/api/notifications/vapid/generate', { method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true }) });
-          if (!res.ok) { out.textContent = "Échec de la génération côté serveur."; return; }
+          if (!res.ok) { if (msg) { msg.textContent = 'Échec de la génération côté serveur.'; msg.className = 'msg error'; } return; }
           const data = await res.json();
-          out.textContent = `Clés installées sur le serveur.\nVAPID_PUBLIC_KEY=${data.publicKey}\nVAPID_SUBJECT=${data.subject}\n`;
+          if (msg) { msg.textContent = 'Clés VAPID installées sur le serveur ✔'; msg.className = 'msg success'; }
         } catch {
-          out.textContent = "Erreur lors de l'installation des clés.";
+          if (msg) { msg.textContent = "Erreur lors de l'installation des clés."; msg.className = 'msg error'; }
         }
       });
     }

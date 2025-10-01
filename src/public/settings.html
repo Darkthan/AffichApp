@@ -81,21 +81,26 @@
         <section class="card" id="security-panel">
           <h2>Sécurité</h2>
           <h3>Protection Fail2Ban</h3>
-          <p class="small muted">Configuration de la protection contre les tentatives de connexion répétées.</p>
+          <p class="small muted">Protection automatique contre les tentatives de connexion répétées.</p>
           <form id="fail2ban-config-form" class="grid">
             <label>
               <input type="checkbox" id="fail2ban-enabled" />
               Activer la protection Fail2Ban
+              <br /><span class="small muted">Bloque temporairement une IP après trop d'échecs.</span>
             </label>
             <label>
-              Nombre maximum de tentatives:
+              Nombre maximum de tentatives
               <input type="number" id="fail2ban-max-attempts" min="1" max="50" value="5" required />
+              <span class="small muted">Plage conseillée: 3–10 (défaut: 5)</span>
             </label>
             <label>
-              Durée du bannissement (minutes):
+              Durée du bannissement (minutes)
               <input type="number" id="fail2ban-ban-duration" min="1" max="1440" value="15" required />
+              <span class="small muted">1 à 1440 min (défaut: 15)</span>
             </label>
-            <button type="submit">Sauvegarder la configuration</button>
+            <div class="inline">
+              <button type="submit">Sauvegarder</button>
+            </div>
             <p id="fail2ban-config-msg" class="msg"></p>
           </form>
           <h3>IPs bannies</h3>
@@ -120,7 +125,7 @@
           <button id="gen-vapid-btn" class="btn secondary">Générer des clés VAPID (dev)</button>
           <button id="gen-vapid-prod-btn" class="btn warn">Générer des clés VAPID (prod)</button>
         </div>
-        <pre id="vapid-output" class="small" style="white-space: pre-wrap; background:#0b1220; padding:8px; border-radius:8px; border:1px solid var(--border);"></pre>
+        
       </section>
 
       <section class="card" id="non-admin-panel" hidden>
