@@ -80,9 +80,10 @@ th { color: var(--muted); font-weight: 600; }
 
 /* Pretty toggle for Fail2Ban enable checkbox */
 .switch-row { display: flex; align-items: center; gap: 10px; }
-input.toggle { appearance: none; width: 46px; height: 26px; background: #1f2937; border: 1px solid var(--border); border-radius: 999px; position: relative; cursor: pointer; transition: background 0.2s ease; }
-/* Slightly smaller thumb to avoid overflow on HiDPI/zoom */
-input.toggle::after { content: ''; position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; background: #94a3b8; border-radius: 50%; transition: transform 0.2s ease, background 0.2s ease; }
+input.toggle { appearance: none; -webkit-appearance: none; width: 56px; height: 30px; background: #1f2937; border: 1px solid var(--border); border-radius: 999px; position: relative; cursor: pointer; transition: background 0.2s ease; outline: none; }
+/* Larger thumb with safe travel to avoid overflow */
+input.toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; background: #94a3b8; border-radius: 50%; transition: transform 0.2s ease, background 0.2s ease; }
 input.toggle:checked { background: var(--primary); }
-/* Translate exactly the inner width minus initial offset (46 track, 4px padding each side, 18px thumb => 20px travel) */
-input.toggle:checked::after { transform: translateX(20px); background: #052e12; }
+/* Travel = track width (56) - (left 3 + right 3) - thumb (24) = 26px */
+input.toggle:checked::after { transform: translateX(26px); background: #052e12; }
+input.toggle:focus-visible { box-shadow: 0 0 0 2px rgba(34,197,94,0.35); }
