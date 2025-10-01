@@ -25,75 +25,86 @@
     <main class="container">
       <h1>Paramètres</h1>
 
-      <section class="card hidden" id="admin-panel" hidden>
-        <h2>Administration</h2>
-        <h3>Logo d'affichage</h3>
-        <form id="logo-form" class="inline" enctype="multipart/form-data">
-          <input type="file" name="logo" accept="image/png, image/jpeg, image/webp" required />
-          <button type="submit">Téléverser le logo</button>
-          <p id="logo-msg" class="msg"></p>
-        </form>
-        <h3>Ajouter un type de carte</h3>
-        <form id="add-type-form" class="inline">
-          <input type="text" name="label" placeholder="Libellé (ex: Visiteurs)" required />
-          <button type="submit">Ajouter</button>
-        </form>
-        <h3>Types existants</h3>
-        <div id="types-list"></div>
-        <h3>Importer des suggestions (CSV)</h3>
-        <form id="import-suggestions-form" class="inline">
-          <input type="file" name="csv" accept=".csv,text/csv" required />
-          <button type="submit">Importer</button>
-          <p class="small muted">Format: colonne 1 = Nom/Prénom, colonne 2 = Type (code ou libellé). Délimiteur , ou ;. <a href="/examples/suggestions-sample.csv" download>Télécharger un exemple</a></p>
-          <p id="import-msg" class="msg"></p>
-        </form>
+      <section id="admin-panel" hidden>
+        <section class="card" id="logo-panel">
+          <h2>Logo d'affichage</h2>
+          <form id="logo-form" class="inline" enctype="multipart/form-data">
+            <input type="file" name="logo" accept="image/png, image/jpeg, image/webp" required />
+            <button type="submit">Téléverser le logo</button>
+            <p id="logo-msg" class="msg"></p>
+          </form>
+        </section>
 
-        <h3>Suggestions: export et suppression</h3>
-        <div class="inline" id="suggestions-actions">
-          <button id="export-suggestions-btn" class="btn">Exporter (CSV)</button>
-          <button id="export-then-delete-btn" class="btn danger">Exporter puis supprimer</button>
-          <p id="suggestions-actions-msg" class="msg"></p>
-        </div>
-        <h3>Utilisateurs</h3>
-        <form id="add-user-form" class="grid">
-          <input type="text" name="name" placeholder="Nom" required />
-          <input type="email" name="email" placeholder="Email" required />
-          <select name="role" required>
-            <option value="requester">Demandeur</option>
-            <option value="admin">Administrateur</option>
-            <option value="appel">Appel</option>
-          </select>
-          <input type="password" name="password" placeholder="Mot de passe" required />
-          <button type="submit">Créer l'utilisateur</button>
-          <p id="add-user-msg" class="msg"></p>
-        </form>
-        <div id="users-list"></div>
+        <section class="card" id="cardtypes-panel">
+          <h2>Types de carte</h2>
+          <form id="add-type-form" class="inline">
+            <input type="text" name="label" placeholder="Libellé (ex: Visiteurs)" required />
+            <button type="submit">Ajouter</button>
+          </form>
+          <div id="types-list"></div>
+        </section>
 
-        <h3>Protection Fail2Ban</h3>
-        <p class="small muted">Configuration de la protection contre les tentatives de connexion répétées.</p>
-        <form id="fail2ban-config-form" class="grid">
-          <label>
-            <input type="checkbox" id="fail2ban-enabled" />
-            Activer la protection Fail2Ban
-          </label>
-          <label>
-            Nombre maximum de tentatives:
-            <input type="number" id="fail2ban-max-attempts" min="1" max="50" value="5" required />
-          </label>
-          <label>
-            Durée du bannissement (minutes):
-            <input type="number" id="fail2ban-ban-duration" min="1" max="1440" value="15" required />
-          </label>
-          <button type="submit">Sauvegarder la configuration</button>
-          <p id="fail2ban-config-msg" class="msg"></p>
-        </form>
+        <section class="card" id="suggestions-panel">
+          <h2>Suggestions de noms</h2>
+          <h3>Importer des suggestions (CSV)</h3>
+          <form id="import-suggestions-form" class="inline">
+            <input type="file" name="csv" accept=".csv,text/csv" required />
+            <button type="submit">Importer</button>
+            <p class="small muted">Format: colonne 1 = Nom/Prénom, colonne 2 = Type (code ou libellé). Délimiteur , ou ;. <a href="/examples/suggestions-sample.csv" download>Télécharger un exemple</a></p>
+            <p id="import-msg" class="msg"></p>
+          </form>
+          <h3>Export et suppression</h3>
+          <div class="inline" id="suggestions-actions">
+            <button id="export-suggestions-btn" class="btn">Exporter (CSV)</button>
+            <button id="export-then-delete-btn" class="btn danger">Exporter puis supprimer</button>
+            <p id="suggestions-actions-msg" class="msg"></p>
+          </div>
+        </section>
 
-        <h3>IPs bannies</h3>
-        <p class="small muted">Liste des adresses IP actuellement bloquées.</p>
-        <div id="banned-ips-list"></div>
-        <div class="inline">
-          <button id="refresh-banned-ips" class="btn">Actualiser</button>
-        </div>
+        <section class="card" id="users-panel">
+          <h2>Utilisateurs</h2>
+          <form id="add-user-form" class="grid">
+            <input type="text" name="name" placeholder="Nom" required />
+            <input type="email" name="email" placeholder="Email" required />
+            <select name="role" required>
+              <option value="requester">Demandeur</option>
+              <option value="admin">Administrateur</option>
+              <option value="appel">Appel</option>
+            </select>
+            <input type="password" name="password" placeholder="Mot de passe" required />
+            <button type="submit">Créer l'utilisateur</button>
+            <p id="add-user-msg" class="msg"></p>
+          </form>
+          <div id="users-list"></div>
+        </section>
+
+        <section class="card" id="security-panel">
+          <h2>Sécurité</h2>
+          <h3>Protection Fail2Ban</h3>
+          <p class="small muted">Configuration de la protection contre les tentatives de connexion répétées.</p>
+          <form id="fail2ban-config-form" class="grid">
+            <label>
+              <input type="checkbox" id="fail2ban-enabled" />
+              Activer la protection Fail2Ban
+            </label>
+            <label>
+              Nombre maximum de tentatives:
+              <input type="number" id="fail2ban-max-attempts" min="1" max="50" value="5" required />
+            </label>
+            <label>
+              Durée du bannissement (minutes):
+              <input type="number" id="fail2ban-ban-duration" min="1" max="1440" value="15" required />
+            </label>
+            <button type="submit">Sauvegarder la configuration</button>
+            <p id="fail2ban-config-msg" class="msg"></p>
+          </form>
+          <h3>IPs bannies</h3>
+          <p class="small muted">Liste des adresses IP actuellement bloquées.</p>
+          <div id="banned-ips-list"></div>
+          <div class="inline">
+            <button id="refresh-banned-ips" class="btn">Actualiser</button>
+          </div>
+        </section>
       </section>
 
       <section class="card" id="notifications-panel" hidden>

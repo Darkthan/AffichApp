@@ -89,7 +89,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   console.log(`[fail2ban] Connexion réussie pour ${clientIp}, compteurs réinitialisés`);
 
   const token = signToken({ sub: user.id, role: user.role });
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+  res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role }, clientIp });
 });
 
 // Admin creates users
