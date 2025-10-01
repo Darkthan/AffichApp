@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const helmet = require('helmet');
+const { csrfProtection } = require('./middleware/csrf');
 const { router: requestsRouter } = require('./routes/requests');
 const { router: authRouter } = require('./routes/auth');
 const { router: usersRouter } = require('./routes/users');
@@ -21,6 +22,9 @@ function createApp() {
 
   const publicDir = path.join(__dirname, 'public');
   app.use(express.static(publicDir));
+
+  // Protection CSRF pour toutes les routes API (sauf routes publiques en lecture seule)
+  app.use('/api', csrfProtection);
 
   app.use('/api/requests', requestsRouter);
   app.use('/api/auth', authRouter);

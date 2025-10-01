@@ -19,7 +19,7 @@ describe('API smoke', () => {
     await seedAdminIfEmpty();
 
     // login with default admin seeded
-    const res = await request(app).post('/api/auth/login').send({ email: 'admin@example.com', password: 'admin123' });
+    const res = await request(app).post('/api/auth/login').set('X-Requested-With', 'XMLHttpRequest').send({ email: 'admin@example.com', password: 'admin123' });
     expect(res.status).toBe(200);
     token = res.body.token;
     expect(token).toBeTruthy();
@@ -41,7 +41,7 @@ describe('API smoke', () => {
 
   it('POST /api/requests creates item and GET lists it (auth required)', async () => {
     const payload = { applicantName: 'Test', email: 't@example.com', cardType: 'etudiants' };
-    const created = await request(app).post('/api/requests').set('Authorization', 'Bearer ' + token).send(payload);
+    const created = await request(app).post('/api/requests').set('Authorization', 'Bearer ' + token).set('X-Requested-With', 'XMLHttpRequest').send(payload);
     expect(created.status).toBe(201);
     expect(created.body).toHaveProperty('id');
 
@@ -57,7 +57,7 @@ describe('API smoke', () => {
   });
 
   it('POST /api/auth/login with wrong password is 401', async () => {
-    const res = await request(app).post('/api/auth/login').send({ email: 'admin@example.com', password: 'wrong' });
+    const res = await request(app).post('/api/auth/login').set('X-Requested-With', 'XMLHttpRequest').send({ email: 'admin@example.com', password: 'wrong' });
     expect(res.status).toBe(401);
   });
 
@@ -66,6 +66,7 @@ describe('API smoke', () => {
     const create = await request(app)
       .post('/api/auth/register')
       .set('Authorization', 'Bearer ' + token)
+      .set('X-Requested-With', 'XMLHttpRequest')
       .send({ name: 'U Test', email: unique, role: 'requester', password: 'pw12345' });
     expect(create.status).toBe(201);
     const list = await request(app).get('/api/users').set('Authorization', 'Bearer ' + token);
@@ -79,11 +80,13 @@ describe('API smoke', () => {
     const first = await request(app)
       .post('/api/auth/register')
       .set('Authorization', 'Bearer ' + token)
+      .set('X-Requested-With', 'XMLHttpRequest')
       .send({ name: 'Dup', email, role: 'requester', password: 'pw12345' });
     expect(first.status).toBe(201);
     const second = await request(app)
       .post('/api/auth/register')
       .set('Authorization', 'Bearer ' + token)
+      .set('X-Requested-With', 'XMLHttpRequest')
       .send({ name: 'Dup', email, role: 'requester', password: 'pw12345' });
     expect(second.status).toBe(409);
   });

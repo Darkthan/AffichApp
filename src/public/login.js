@@ -9,6 +9,8 @@ async function fetchJSON(url, options = {}) {
   const base = options || {};
   const headers = { ...(base.headers || {}) };
   if (base.body !== null && base.body !== undefined && !headers['Content-Type']) {headers['Content-Type'] = 'application/json';}
+  // Protection CSRF: ajouter X-Requested-With pour toutes les requêtes API
+  if (!headers['X-Requested-With']) {headers['X-Requested-With'] = 'XMLHttpRequest';}
   const res = await fetch(url, { ...base, headers });
   let data = null;
   try { data = await res.json(); } catch {}

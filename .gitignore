@@ -1,6 +1,7 @@
 node_modules/
 .env
 data/*.json
+data/.jwt-secret
 dist/
 coverage/
 *.log
