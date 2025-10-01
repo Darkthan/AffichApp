@@ -14,36 +14,74 @@ const passwordChangeLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, sta
 // Ensure admin seed on startup of this router
 seedAdminIfEmpty().catch((e) => console.error('Admin seed error:', e));
 
+// Fonction pour normaliser l'IP (convertir IPv6 mapped IPv4 en IPv4)
+function normalizeIp(ip) {
+  if (!ip) {return 'unknown';}
+  // Convertir ::ffff:127.0.0.1 en 127.0.0.1
+  if (ip.startsWith('::ffff:')) {
+    return ip.substring(7);
+  }
+  // Convertir ::1 (localhost IPv6) en 127.0.0.1
+  if (ip === '::1') {
+    return '127.0.0.1';
+  }
+  return ip;
+}
+
 router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {return res.status(400).json({ error: 'email and password required' });}
 
   // Vérifier si l'IP est bannie
-  const clientIp = req.ip || req.connection.remoteAddress;
+  const rawIp = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+  const clientIp = normalizeIp(rawIp);
+  console.log(`[fail2ban] Tentative de connexion depuis ${clientIp} (raw: ${rawIp})`);
+
   const bannedUntil = fail2ban.isBanned(clientIp);
   if (bannedUntil) {
     const remainingMinutes = Math.ceil((bannedUntil - Date.now()) / 60000);
+    console.log(`[fail2ban] IP ${clientIp} est bannie jusqu'à ${new Date(bannedUntil).toLocaleString()}`);
     return res.status(403).json({
       error: 'Too many failed attempts',
-      message: `Votre IP est temporairement bloquée. Réessayez dans ${remainingMinutes} minute(s).`,
-      bannedUntil
+      message: `Votre IP (${clientIp}) est temporairement bloquée suite à de multiples tentatives de connexion échouées. Réessayez dans ${remainingMinutes} minute(s).`,
+      bannedUntil,
+      clientIp
     });
   }
 
   const user = await getByEmail(email);
   if (!user) {
-    fail2ban.recordFailedAttempt(clientIp);
+    const justBanned = fail2ban.recordFailedAttempt(clientIp);
+    console.log(`[fail2ban] Tentative échouée pour ${clientIp} (utilisateur inexistant)`);
+    if (justBanned) {
+      console.log(`[fail2ban] IP ${clientIp} vient d'être bannie`);
+      const config = fail2ban.readConfig();
+      return res.status(403).json({
+        error: 'Too many failed attempts',
+        message: `Trop de tentatives échouées. Votre IP (${clientIp}) est bloquée pour ${config.banDuration} minute(s).`
+      });
+    }
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) {
-    fail2ban.recordFailedAttempt(clientIp);
+    const justBanned = fail2ban.recordFailedAttempt(clientIp);
+    console.log(`[fail2ban] Tentative échouée pour ${clientIp} (mot de passe incorrect)`);
+    if (justBanned) {
+      console.log(`[fail2ban] IP ${clientIp} vient d'être bannie`);
+      const config = fail2ban.readConfig();
+      return res.status(403).json({
+        error: 'Too many failed attempts',
+        message: `Trop de tentatives échouées. Votre IP (${clientIp}) est bloquée pour ${config.banDuration} minute(s).`
+      });
+    }
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
   // Connexion réussie, réinitialiser les tentatives
   fail2ban.resetAttempts(clientIp);
+  console.log(`[fail2ban] Connexion réussie pour ${clientIp}, compteurs réinitialisés`);
 
   const token = signToken({ sub: user.id, role: user.role });
   res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });

@@ -63,9 +63,17 @@ window.addEventListener('DOMContentLoaded', async () => {
       const remember = !!fd.get('remember');
       await login(fd.get('email'), fd.get('password'), remember);
     } catch (err) {
-      const code = err && err.status ? ` (HTTP ${err.status})` : '';
-      msg.textContent = 'Identifiants invalides' + code;
-      msg.className = 'msg error';
+      // Si c'est une erreur 403 (bannissement fail2ban)
+      if (err && err.status === 403) {
+        const errorData = err.data || {};
+        msg.textContent = errorData.message || 'Trop de tentatives échouées. Votre IP est temporairement bloquée.';
+        msg.className = 'msg error';
+        msg.style.whiteSpace = 'pre-line';
+      } else {
+        const code = err && err.status ? ` (HTTP ${err.status})` : '';
+        msg.textContent = 'Identifiants invalides' + code;
+        msg.className = 'msg error';
+      }
     }
   });
 });
