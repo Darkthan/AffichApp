@@ -90,9 +90,6 @@
                 <br /><span class="small muted">Bloque temporairement une IP après trop d'échecs.</span>
               </span>
             </label>
-            <div class="inline">
-              <button type="submit">Sauvegarder</button>
-            </div>
             <label>
               Nombre maximum de tentatives
               <input type="number" id="fail2ban-max-attempts" min="1" max="50" value="5" required />
@@ -103,6 +100,9 @@
               <input type="number" id="fail2ban-ban-duration" min="1" max="1440" value="15" required />
               <span class="small muted">1 à 1440 min (défaut: 15)</span>
             </label>
+            <div class="inline">
+              <button type="submit">Sauvegarder</button>
+            </div>
             <p id="fail2ban-config-msg" class="msg"></p>
           </form>
           <h3>IPs bannies</h3>
