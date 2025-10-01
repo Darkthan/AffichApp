@@ -376,6 +376,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Menu toggle & outside click
   const toggle = document.getElementById('menu-toggle');
   const dropdown = document.getElementById('menu-dropdown');
+  const logo = document.querySelector('.brand-logo');
+  if (logo) {
+    logo.style.cursor = 'pointer';
+    logo.title = "Retour à l'accueil";
+    logo.addEventListener('click', (e) => { e.preventDefault(); window.location.assign('/'); });
+  }
   if (toggle && dropdown) {
     toggle.addEventListener('click', (e) => {
       e.stopPropagation();
