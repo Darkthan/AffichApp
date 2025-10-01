@@ -76,4 +76,62 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     }
   });
+
+  // === PASSKEY LOGIN ===
+  const passkeyLoginBtn = document.getElementById('passkey-login-btn');
+  const passkeyLoginMsg = document.getElementById('passkey-login-msg');
+
+  if (passkeyLoginBtn) {
+    passkeyLoginBtn.addEventListener('click', async () => {
+      passkeyLoginMsg.textContent = '';
+      passkeyLoginMsg.className = 'msg';
+
+      try {
+        // Vérifier le support WebAuthn
+        if (!window.PublicKeyCredential) {
+          passkeyLoginMsg.textContent = 'Votre navigateur ne supporte pas les passkeys';
+          passkeyLoginMsg.className = 'msg error';
+          return;
+        }
+
+        // Demander l'email
+        const email = prompt('Entrez votre adresse email:');
+        if (!email) {return;}
+
+        // Étape 1: Obtenir les options
+        passkeyLoginMsg.textContent = 'Génération des options...';
+
+        const optionsRes = await fetchJSON('/api/passkeys/authenticate/generate-options', {
+          method: 'POST',
+          body: JSON.stringify({ email })
+        });
+
+        // Étape 2: Authentifier avec la passkey
+        passkeyLoginMsg.textContent = 'Veuillez utiliser votre passkey...';
+
+        const credential = await window.WebAuthnHelper.startAuthentication(optionsRes);
+
+        // Étape 3: Vérifier
+        passkeyLoginMsg.textContent = 'Vérification...';
+
+        const verifyRes = await fetchJSON('/api/passkeys/authenticate/verify', {
+          method: 'POST',
+          body: JSON.stringify({ email, credential })
+        });
+
+        // Succès - stocker le token
+        authToken = verifyRes.token;
+        try {
+          localStorage.setItem('token', authToken);
+        } catch {}
+
+        // Rediriger
+        window.location.replace('/');
+      } catch (e) {
+        console.error('Erreur passkey login:', e);
+        passkeyLoginMsg.textContent = e.message || 'Erreur lors de l\'authentification';
+        passkeyLoginMsg.className = 'msg error';
+      }
+    });
+  }
 });

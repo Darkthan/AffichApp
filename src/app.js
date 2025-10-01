@@ -12,6 +12,7 @@ const { router: settingsRouter } = require('./routes/settings');
 const { router: callsRouter } = require('./routes/calls');
 const { router: notificationsRouter } = require('./routes/notifications');
 const { router: fail2banRouter } = require('./routes/fail2ban');
+const { router: passkeysRouter } = require('./routes/passkeys');
 
 function createApp() {
   const app = express();
@@ -40,6 +41,7 @@ function createApp() {
   app.use('/api/calls', callsRouter);
   app.use('/api/notifications', notificationsRouter);
   app.use('/api/fail2ban', fail2banRouter);
+  app.use('/api/passkeys', passkeysRouter);
   app.use('/public', publicRouter);
 
   app.get('/health', (req, res) => {

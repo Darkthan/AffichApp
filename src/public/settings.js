@@ -669,3 +669,164 @@ if (headerLogo) {
     headerLogo.style.display = 'none';
   });
 }
+
+// === PASSKEYS MANAGEMENT ===
+async function loadMyPasskeys() {
+  try {
+    const passkeys = await fetchJSON('/api/passkeys/my-passkeys', { method: 'GET' });
+    const container = document.getElementById('my-passkeys-list');
+
+    if (passkeys.length === 0) {
+      container.innerHTML = '<p class="muted">Aucune passkey enregistrée.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    passkeys.forEach((pk) => {
+      const div = el('div', { class: 'user-item' },
+        el('span', {}, `${pk.nickname} - Créée le ${new Date(pk.createdAt).toLocaleString()}${pk.lastUsedAt ? ` - Dernière utilisation: ${new Date(pk.lastUsedAt).toLocaleString()}` : ''}`),
+        el('button', { class: 'btn danger small' }, 'Supprimer')
+      );
+
+      div.querySelector('button').addEventListener('click', async () => {
+        if (!confirm(`Supprimer la passkey "${pk.nickname}" ?`)) {return;}
+        try {
+          await fetchJSON(`/api/passkeys/my-passkeys/${pk.id}`, { method: 'DELETE' });
+          loadMyPasskeys();
+          const msg = document.getElementById('passkey-msg');
+          if (msg) {
+            msg.textContent = '✓ Passkey supprimée';
+            msg.className = 'msg success';
+          }
+        } catch (e) {
+          const msg = document.getElementById('passkey-msg');
+          if (msg) {
+            msg.textContent = '✗ ' + e.message;
+            msg.className = 'msg error';
+          }
+        }
+      });
+
+      container.appendChild(div);
+    });
+  } catch (e) {
+    console.error('Erreur chargement passkeys:', e);
+  }
+}
+
+async function loadAllPasskeys() {
+  try {
+    const passkeys = await fetchJSON('/api/passkeys/all', { method: 'GET' });
+    const container = document.getElementById('all-passkeys-list');
+
+    if (!container) {return;}
+
+    if (passkeys.length === 0) {
+      container.innerHTML = '<p class="muted">Aucune passkey enregistrée.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    passkeys.forEach((pk) => {
+      const div = el('div', { class: 'user-item' },
+        el('span', {}, `${pk.userEmail} (${pk.userName}) - ${pk.nickname} - Créée: ${new Date(pk.createdAt).toLocaleString()}`),
+        el('button', { class: 'btn danger small' }, 'Supprimer')
+      );
+
+      div.querySelector('button').addEventListener('click', async () => {
+        if (!confirm(`Supprimer la passkey "${pk.nickname}" de ${pk.userEmail} ?`)) {return;}
+        try {
+          await fetchJSON(`/api/passkeys/all/${pk.id}`, { method: 'DELETE' });
+          loadAllPasskeys();
+        } catch (e) {
+          alert('Erreur suppression: ' + e.message);
+        }
+      });
+
+      container.appendChild(div);
+    });
+  } catch (e) {
+    console.error('Erreur chargement all passkeys:', e);
+  }
+}
+
+const addPasskeyBtn = document.getElementById('add-passkey-btn');
+if (addPasskeyBtn) {
+  addPasskeyBtn.addEventListener('click', async () => {
+    const msg = document.getElementById('passkey-msg');
+    if (msg) {
+      msg.textContent = '';
+      msg.className = 'msg';
+    }
+
+    try {
+      // Vérifier le support WebAuthn
+      if (!window.PublicKeyCredential) {
+        if (msg) {
+          msg.textContent = 'Votre navigateur ne supporte pas les passkeys';
+          msg.className = 'msg error';
+        }
+        return;
+      }
+
+      // Demander un surnom
+      const nickname = prompt('Donnez un nom à cette passkey (ex: "iPhone", "Windows Hello")', 'Ma passkey');
+      if (!nickname) {return;}
+
+      // Étape 1: Obtenir les options du serveur
+      if (msg) {
+        msg.textContent = 'Génération des options...';
+        msg.className = 'msg';
+      }
+
+      const options = await fetchJSON('/api/passkeys/register/generate-options', { method: 'POST' });
+
+      // Étape 2: Créer la passkey
+      if (msg) {
+        msg.textContent = 'Veuillez utiliser votre appareil pour créer la passkey...';
+        msg.className = 'msg';
+      }
+
+      const credential = await window.WebAuthnHelper.startRegistration(options);
+
+      // Étape 3: Envoyer au serveur pour vérification
+      if (msg) {
+        msg.textContent = 'Vérification...';
+        msg.className = 'msg';
+      }
+
+      await fetchJSON('/api/passkeys/register/verify', {
+        method: 'POST',
+        body: JSON.stringify({ credential, nickname })
+      });
+
+      // Succès
+      if (msg) {
+        msg.textContent = '✓ Passkey créée avec succès !';
+        msg.className = 'msg success';
+      }
+
+      loadMyPasskeys();
+    } catch (e) {
+      console.error('Erreur création passkey:', e);
+      if (msg) {
+        msg.textContent = '✗ ' + (e.message || 'Erreur lors de la création de la passkey');
+        msg.className = 'msg error';
+      }
+    }
+  });
+}
+
+const refreshAllPasskeysBtn = document.getElementById('refresh-all-passkeys');
+if (refreshAllPasskeysBtn) {
+  refreshAllPasskeysBtn.addEventListener('click', loadAllPasskeys);
+}
+
+// Charger les passkeys au démarrage
+loadMyPasskeys();
+
+// Si admin, charger aussi toutes les passkeys
+const adminPanelForPasskeys = document.getElementById('admin-panel');
+if (adminPanelForPasskeys && !adminPanelForPasskeys.hidden) {
+  loadAllPasskeys();
+}

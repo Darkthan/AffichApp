@@ -26,6 +26,7 @@ module.exports = [
         fetch: 'readonly',
         alert: 'readonly',
         confirm: 'readonly',
+        prompt: 'readonly',
         FormData: 'readonly',
         FileReader: 'readonly',
         setInterval: 'readonly',

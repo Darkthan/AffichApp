@@ -38,8 +38,18 @@
           <button type="submit">Se connecter</button>
           <p id="login-msg" class="msg"></p>
         </form>
+
+        <div style="text-align: center; margin: 16px 0;">
+          <span class="muted">ou</span>
+        </div>
+
+        <div style="text-align: center;">
+          <button id="passkey-login-btn" class="btn secondary" type="button">Se connecter avec une passkey 🔑</button>
+          <p id="passkey-login-msg" class="msg"></p>
+        </div>
       </section>
     </main>
+    <script src="/webauthn-helper.js"></script>
     <script src="/login.js" defer></script>
   </body>
   </html>
