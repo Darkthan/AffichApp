@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { requireAuth, requireRole } = require('../middleware/auth');
-const { saveLogoFromData } = require('../services/settings');
+const { saveLogoFromData, getSettings, updateSettings } = require('../services/settings');
 const { getAll: getCardTypes } = require('../services/cardTypes');
 const suggestions = require('../services/suggestions');
 
@@ -100,6 +100,38 @@ router.delete('/suggestions', requireAuth, requireRole('admin'), async (req, res
     res.status(204).send();
   } catch (e) {
     console.error('Clear suggestions error:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// GET /api/settings/webauthn -> récupère les paramètres WebAuthn
+router.get('/webauthn', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const settings = await getSettings();
+    res.json({
+      rpName: settings.rpName || '',
+      rpID: settings.rpID || '',
+      origin: settings.origin || ''
+    });
+  } catch (e) {
+    console.error('Get webauthn settings error:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// PATCH /api/settings/webauthn { rpName, rpID, origin }
+router.patch('/webauthn', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const { rpName, rpID, origin } = req.body || {};
+    const updates = {};
+    if (rpName !== undefined) {updates.rpName = rpName;}
+    if (rpID !== undefined) {updates.rpID = rpID;}
+    if (origin !== undefined) {updates.origin = origin;}
+
+    await updateSettings(updates);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Update webauthn settings error:', e);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

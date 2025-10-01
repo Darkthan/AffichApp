@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 
 const DATA_DIR = path.join(process.cwd(), 'data');
+const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 const ALLOWED = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
@@ -10,6 +11,23 @@ const ALLOWED = {
 
 async function ensureDataDir() {
   await fs.mkdir(DATA_DIR, { recursive: true });
+}
+
+async function getSettings() {
+  try {
+    const data = await fs.readFile(SETTINGS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return {};
+  }
+}
+
+async function updateSettings(updates) {
+  await ensureDataDir();
+  const current = await getSettings();
+  const updated = { ...current, ...updates };
+  await fs.writeFile(SETTINGS_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+  return updated;
 }
 
 async function getLogoPathIfExists() {
@@ -69,5 +87,5 @@ async function saveLogoFromData(data, mime) {
   return filePath;
 }
 
-module.exports = { getLogoPathIfExists, saveLogoFromData };
+module.exports = { getLogoPathIfExists, saveLogoFromData, getSettings, updateSettings };
 
