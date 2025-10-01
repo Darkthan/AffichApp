@@ -15,10 +15,34 @@ const router = express.Router();
 
 // Configuration WebAuthn
 const rpName = process.env.RP_NAME || 'Application Demandes Cartes';
-const rpID = process.env.RP_ID || 'localhost';
-const origin = process.env.ORIGIN || `http://${rpID}:3000`;
+const rpID = process.env.RP_ID || (process.env.NODE_ENV === 'production' ? '' : 'localhost');
+const origin = process.env.ORIGIN || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000');
 
 console.log(`[passkeys] Configuration: rpName="${rpName}", rpID="${rpID}", origin="${origin}"`);
+
+// Fonction pour obtenir le rpID et origin depuis la requête si non configurés
+function getRpConfig(req) {
+  let effectiveRpID = rpID;
+  let effectiveOrigin = origin;
+
+  // Si non configuré, détecter depuis la requête
+  if (!effectiveRpID || !effectiveOrigin) {
+    const host = req.get('host') || 'localhost';
+    const protocol = req.protocol || 'http';
+
+    if (!effectiveRpID) {
+      effectiveRpID = host.split(':')[0]; // Enlever le port
+    }
+
+    if (!effectiveOrigin) {
+      effectiveOrigin = `${protocol}://${host}`;
+    }
+
+    console.log(`[passkeys] Auto-détection: rpID="${effectiveRpID}", origin="${effectiveOrigin}"`);
+  }
+
+  return { rpID: effectiveRpID, origin: effectiveOrigin };
+}
 
 // Stockage temporaire des challenges (en production, utiliser Redis ou similaire)
 const challenges = new Map();
@@ -29,6 +53,7 @@ const challenges = new Map();
 router.post('/register/generate-options', requireAuth, async (req, res) => {
   try {
     const user = req.user;
+    const { rpID: effectiveRpID, origin: effectiveOrigin } = getRpConfig(req);
 
     // Récupérer les passkeys existantes pour exclure les credentialIds déjà utilisés
     const existingPasskeys = passkeysService.getPasskeysByUserId(user.id);
@@ -40,7 +65,7 @@ router.post('/register/generate-options', requireAuth, async (req, res) => {
 
     const options = await generateRegistrationOptions({
       rpName,
-      rpID,
+      rpID: effectiveRpID,
       userID: Buffer.from(user.id.toString()),
       userName: user.email,
       userDisplayName: user.name,
@@ -61,7 +86,8 @@ router.post('/register/generate-options', requireAuth, async (req, res) => {
     res.json(options);
   } catch (e) {
     console.error('[passkeys] Erreur generate-options:', e);
-    res.status(500).json({ error: 'Erreur génération options', message: e.message });
+    console.error('[passkeys] Stack:', e.stack);
+    res.status(500).json({ error: 'Erreur génération options', message: e.message, details: e.stack });
   }
 });
 
@@ -70,6 +96,7 @@ router.post('/register/verify', requireAuth, async (req, res) => {
   try {
     const user = req.user;
     const { credential, nickname } = req.body;
+    const { rpID: effectiveRpID, origin: effectiveOrigin } = getRpConfig(req);
 
     if (!credential) {
       return res.status(400).json({ error: 'Credential requis' });
@@ -85,8 +112,8 @@ router.post('/register/verify', requireAuth, async (req, res) => {
     const verification = await verifyRegistrationResponse({
       response: credential,
       expectedChallenge,
-      expectedOrigin: origin,
-      expectedRPID: rpID
+      expectedOrigin: effectiveOrigin,
+      expectedRPID: effectiveRpID
     });
 
     if (!verification.verified || !verification.registrationInfo) {
@@ -123,6 +150,7 @@ router.post('/register/verify', requireAuth, async (req, res) => {
 router.post('/authenticate/generate-options', async (req, res) => {
   try {
     const { email } = req.body;
+    const { rpID: effectiveRpID } = getRpConfig(req);
 
     if (!email) {
       return res.status(400).json({ error: 'Email requis' });
@@ -148,7 +176,7 @@ router.post('/authenticate/generate-options', async (req, res) => {
     }));
 
     const options = await generateAuthenticationOptions({
-      rpID,
+      rpID: effectiveRpID,
       allowCredentials,
       userVerification: 'preferred'
     });
@@ -170,6 +198,7 @@ router.post('/authenticate/generate-options', async (req, res) => {
 router.post('/authenticate/verify', async (req, res) => {
   try {
     const { email, credential } = req.body;
+    const { rpID: effectiveRpID, origin: effectiveOrigin } = getRpConfig(req);
 
     if (!email || !credential) {
       return res.status(400).json({ error: 'Email et credential requis' });
@@ -199,8 +228,8 @@ router.post('/authenticate/verify', async (req, res) => {
     const verification = await verifyAuthenticationResponse({
       response: credential,
       expectedChallenge,
-      expectedOrigin: origin,
-      expectedRPID: rpID,
+      expectedOrigin: effectiveOrigin,
+      expectedRPID: effectiveRpID,
       authenticator: {
         credentialID: Buffer.from(passkey.credentialId, 'base64url'),
         credentialPublicKey: Buffer.from(passkey.publicKey, 'base64url'),
