@@ -94,16 +94,12 @@ window.addEventListener('DOMContentLoaded', async () => {
           return;
         }
 
-        // Demander l'email
-        const email = prompt('Entrez votre adresse email:');
-        if (!email) {return;}
-
-        // Étape 1: Obtenir les options
+        // Étape 1: Obtenir les options (sans email pour mode discoverable)
         passkeyLoginMsg.textContent = 'Génération des options...';
 
         const optionsRes = await fetchJSON('/api/passkeys/authenticate/generate-options', {
           method: 'POST',
-          body: JSON.stringify({ email })
+          body: JSON.stringify({})
         });
 
         // Étape 2: Authentifier avec la passkey
@@ -116,7 +112,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
         const verifyRes = await fetchJSON('/api/passkeys/authenticate/verify', {
           method: 'POST',
-          body: JSON.stringify({ email, credential })
+          body: JSON.stringify({ credential, challengeKey: optionsRes.challengeKey })
         });
 
         // Succès - stocker le token

@@ -77,7 +77,7 @@ router.post('/register/generate-options', requireAuth, async (req, res) => {
       attestationType: 'none',
       excludeCredentials,
       authenticatorSelection: {
-        residentKey: 'preferred',
+        residentKey: 'required',
         userVerification: 'preferred'
       }
     });
@@ -151,34 +151,39 @@ router.post('/register/verify', requireAuth, async (req, res) => {
 
 // === AUTHENTIFICATION PAR PASSKEY ===
 
-// Étape 1: Générer les options d'authentification
+// Étape 1: Générer les options d'authentification (avec ou sans email)
 router.post('/authenticate/generate-options', async (req, res) => {
   try {
     const { email } = req.body;
     const { rpID: effectiveRpID } = await getRpConfig(req);
 
-    if (!email) {
-      return res.status(400).json({ error: 'Email requis' });
-    }
+    let allowCredentials;
+    let challengeKey;
 
-    // Récupérer l'utilisateur
-    const user = await getByEmail(email);
-    if (!user) {
-      // Ne pas révéler si l'utilisateur existe
-      return res.status(404).json({ error: 'Utilisateur inconnu ou aucune passkey' });
-    }
+    if (email) {
+      // Mode avec email: limiter aux passkeys de cet utilisateur
+      const user = await getByEmail(email);
+      if (!user) {
+        return res.status(404).json({ error: 'Utilisateur inconnu ou aucune passkey' });
+      }
 
-    // Récupérer les passkeys de l'utilisateur
-    const passkeys = passkeysService.getPasskeysByUserId(user.id);
-    if (passkeys.length === 0) {
-      return res.status(404).json({ error: 'Aucune passkey enregistrée' });
-    }
+      const passkeys = passkeysService.getPasskeysByUserId(user.id);
+      if (passkeys.length === 0) {
+        return res.status(404).json({ error: 'Aucune passkey enregistrée' });
+      }
 
-    const allowCredentials = passkeys.map(pk => ({
-      id: Buffer.from(pk.credentialId, 'base64url'),
-      type: 'public-key',
-      transports: pk.transports
-    }));
+      allowCredentials = passkeys.map(pk => ({
+        id: Buffer.from(pk.credentialId, 'base64url'),
+        type: 'public-key',
+        transports: pk.transports
+      }));
+
+      challengeKey = `auth_${email}`;
+    } else {
+      // Mode discoverable: pas de restriction, le navigateur propose toutes les passkeys
+      allowCredentials = undefined;
+      challengeKey = `auth_discoverable_${Date.now()}_${Math.random()}`;
+    }
 
     const options = await generateAuthenticationOptions({
       rpID: effectiveRpID,
@@ -186,13 +191,13 @@ router.post('/authenticate/generate-options', async (req, res) => {
       userVerification: 'preferred'
     });
 
-    // Stocker le challenge avec l'email
-    challenges.set(`auth_${email}`, options.challenge);
+    // Stocker le challenge
+    challenges.set(challengeKey, options.challenge);
 
     // Expirer après 5 minutes
-    setTimeout(() => challenges.delete(`auth_${email}`), 5 * 60 * 1000);
+    setTimeout(() => challenges.delete(challengeKey), 5 * 60 * 1000);
 
-    res.json(options);
+    res.json({ ...options, challengeKey });
   } catch (e) {
     console.error('[passkeys] Erreur auth generate-options:', e);
     res.status(500).json({ error: 'Erreur génération options', message: e.message });
@@ -202,21 +207,20 @@ router.post('/authenticate/generate-options', async (req, res) => {
 // Étape 2: Vérifier et authentifier
 router.post('/authenticate/verify', async (req, res) => {
   try {
-    const { email, credential } = req.body;
+    const { email, credential, challengeKey } = req.body;
     const { rpID: effectiveRpID, origin: effectiveOrigin } = await getRpConfig(req);
 
-    if (!email || !credential) {
-      return res.status(400).json({ error: 'Email et credential requis' });
-    }
-
-    // Récupérer l'utilisateur
-    const user = await getByEmail(email);
-    if (!user) {
-      return res.status(401).json({ error: 'Authentification échouée' });
+    if (!credential) {
+      return res.status(400).json({ error: 'Credential requis' });
     }
 
     // Récupérer le challenge
-    const expectedChallenge = challenges.get(`auth_${email}`);
+    const actualChallengeKey = challengeKey || (email ? `auth_${email}` : null);
+    if (!actualChallengeKey) {
+      return res.status(400).json({ error: 'challengeKey ou email requis' });
+    }
+
+    const expectedChallenge = challenges.get(actualChallengeKey);
     if (!expectedChallenge) {
       return res.status(400).json({ error: 'Challenge expiré ou invalide' });
     }
@@ -225,8 +229,14 @@ router.post('/authenticate/verify', async (req, res) => {
     const credentialIdB64 = Buffer.from(credential.rawId, 'base64url').toString('base64url');
     const passkey = passkeysService.getPasskeyByCredentialId(credentialIdB64);
 
-    if (!passkey || passkey.userId !== user.id) {
+    if (!passkey) {
       return res.status(401).json({ error: 'Passkey invalide' });
+    }
+
+    // Récupérer l'utilisateur associé à la passkey
+    const user = await getById(passkey.userId);
+    if (!user) {
+      return res.status(401).json({ error: 'Utilisateur inconnu' });
     }
 
     // Vérifier la réponse
@@ -250,7 +260,7 @@ router.post('/authenticate/verify', async (req, res) => {
     passkeysService.updatePasskeyCounter(passkey.credentialId, verification.authenticationInfo.newCounter);
 
     // Nettoyer le challenge
-    challenges.delete(`auth_${email}`);
+    challenges.delete(actualChallengeKey);
 
     // Générer le token JWT
     const token = signToken({ sub: user.id, role: user.role });
