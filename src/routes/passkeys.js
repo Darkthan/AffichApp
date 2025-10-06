@@ -5,6 +5,12 @@ const { signToken } = require('../services/auth');
 const passkeysService = require('../services/passkeys');
 const { getSettings } = require('../services/settings');
 
+// Polyfill WebCrypto for Node.js 18
+if (!globalThis.crypto) {
+  const { webcrypto } = require('crypto');
+  globalThis.crypto = webcrypto;
+}
+
 const {
   generateRegistrationOptions,
   verifyRegistrationResponse,
