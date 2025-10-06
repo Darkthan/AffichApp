@@ -225,9 +225,8 @@ router.post('/authenticate/verify', async (req, res) => {
       return res.status(400).json({ error: 'Challenge expiré ou invalide' });
     }
 
-    // Récupérer la passkey utilisée
-    const credentialIdB64 = Buffer.from(credential.rawId, 'base64url').toString('base64url');
-    const passkey = passkeysService.getPasskeyByCredentialId(credentialIdB64);
+    // Récupérer la passkey utilisée (rawId est déjà en base64url)
+    const passkey = passkeysService.getPasskeyByCredentialId(credential.rawId);
 
     if (!passkey) {
       return res.status(401).json({ error: 'Passkey invalide' });
