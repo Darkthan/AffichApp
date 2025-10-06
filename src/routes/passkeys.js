@@ -226,9 +226,11 @@ router.post('/authenticate/verify', async (req, res) => {
     }
 
     // Récupérer la passkey utilisée (rawId est déjà en base64url)
+    console.log('[passkeys] Recherche passkey avec credentialId:', credential.rawId);
     const passkey = passkeysService.getPasskeyByCredentialId(credential.rawId);
 
     if (!passkey) {
+      console.log('[passkeys] Passkey non trouvée. Toutes les passkeys:', passkeysService.getAllPasskeys().map(pk => ({ id: pk.credentialId, userId: pk.userId })));
       return res.status(401).json({ error: 'Passkey invalide' });
     }
 
