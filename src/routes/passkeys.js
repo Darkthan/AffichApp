@@ -125,12 +125,12 @@ router.post('/register/verify', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Vérification échouée' });
     }
 
-    const { credentialPublicKey, credentialID, counter } = verification.registrationInfo;
+    const { credentialPublicKey, counter } = verification.registrationInfo;
 
-    // Enregistrer la passkey
+    // Enregistrer la passkey (utiliser credential.rawId déjà en base64url, pas credentialID)
     const passkey = passkeysService.addPasskey(
       user.id,
-      Buffer.from(credentialID).toString('base64url'),
+      credential.rawId,
       Buffer.from(credentialPublicKey).toString('base64url'),
       counter,
       credential.response.transports || [],
