@@ -60,6 +60,24 @@ window.addEventListener('DOMContentLoaded', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(adjustScaleToViewport, 100);
   });
+
+  // Shortcuts: open settings and logout from display page
+  const settingsBtn = document.getElementById('settings-btn');
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.assign('/settings.html');
+    });
+  }
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      try { localStorage.removeItem('token'); } catch {}
+      try { sessionStorage.removeItem('token'); } catch {}
+      window.location.replace('/login.html');
+    });
+  }
 });
 
 async function loadCalls() {
