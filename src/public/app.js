@@ -51,7 +51,20 @@ function renderList(items) {
   }
   const table = el('table', { class: 'table' });
   table.appendChild(
-    el('thead', {}, el('tr', {}, el('th', {}, 'ID'), el('th', {}, 'Demandeur'), el('th', {}, 'Email'), el('th', {}, 'Type'), el('th', {}, 'Statut'), el('th', {}, 'Actions')))
+    el(
+      'thead',
+      {},
+      el(
+        'tr',
+        {},
+        el('th', {}, 'ID'),
+        el('th', {}, 'Demandeur'),
+        el('th', { class: 'col-email' }, 'Email'),
+        el('th', { class: 'col-type' }, 'Type'),
+        el('th', {}, 'Statut'),
+        el('th', {}, 'Actions')
+      )
+    )
   );
   const tbody = el('tbody');
   const isAdmin = window.currentUser && window.currentUser.role === 'admin';
@@ -104,8 +117,8 @@ function renderList(items) {
         {},
         el('td', {}, String(it.id)),
         el('td', {}, it.applicantName),
-        el('td', {}, it.email && it.email.trim() ? it.email : '—'),
-        el('td', {}, it.cardType),
+        el('td', { class: 'col-email' }, it.email && it.email.trim() ? it.email : '—'),
+        el('td', { class: 'col-type' }, it.cardType),
         el('td', {}, statusLabel(it.status)),
         el('td', {}, el('div', { class: 'btn-group' }, actions.length ? actions : el('span', { class: 'muted' }, '—')))
       )
