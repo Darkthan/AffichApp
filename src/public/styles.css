@@ -99,3 +99,15 @@ input.toggle:checked { background: var(--primary); }
 /* Travel = track width (56) - (left 3 + right 3) - thumb (24) = 26px */
 input.toggle:checked::after { transform: translateX(26px); background: #052e12; }
 input.toggle:focus-visible { box-shadow: 0 0 0 2px rgba(34,197,94,0.35); }
+
+/* Responsive tweaks: stack action buttons on mobile */
+@media (max-width: 640px) {
+  /* Stack buttons vertically to avoid horizontal overflow */
+  .btn-group { flex-direction: column; align-items: stretch; gap: 8px; }
+  .btn-group .flex-break { display: none; }
+  .btn-group .btn,
+  .btn-group .icon-btn { width: 100%; justify-content: center; }
+  /* Allow tables to scroll horizontally as a safety net */
+  table { display: block; width: 100%; overflow-x: auto; }
+  thead, tbody { display: table; width: 100%; }
+}
