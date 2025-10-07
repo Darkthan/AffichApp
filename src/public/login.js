@@ -80,6 +80,19 @@ window.addEventListener('DOMContentLoaded', async () => {
   // === PASSKEY LOGIN ===
   const passkeyLoginBtn = document.getElementById('passkey-login-btn');
   const passkeyLoginMsg = document.getElementById('passkey-login-msg');
+  const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+
+  // Ensure passkey button matches submit button width (visually consistent)
+  function syncPasskeyWidth() {
+    if (!passkeyLoginBtn || !submitBtn) return;
+    const rect = submitBtn.getBoundingClientRect();
+    if (rect && rect.width) {
+      passkeyLoginBtn.style.width = Math.round(rect.width) + 'px';
+    }
+  }
+  // Initial sync and on resize
+  syncPasskeyWidth();
+  window.addEventListener('resize', syncPasskeyWidth);
 
   if (passkeyLoginBtn) {
     passkeyLoginBtn.addEventListener('click', async () => {
