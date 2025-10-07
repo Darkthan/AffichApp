@@ -242,19 +242,7 @@ function renderAuth() {
   refreshUI();
 }
 
-function renderTopbarMenu() {
-  const menu = document.getElementById('menu-dropdown');
-  if (!menu) {return;}
-  menu.innerHTML = '';
-  if (window.currentUser) {
-    const settingsLink = el('a', { class: 'menu-item', href: '/settings.html' }, 'Paramètres');
-    const logoutBtn = el('button', { class: 'menu-item', onclick: () => { closeMenu(); logout(); } }, 'Se déconnecter');
-    menu.append(settingsLink, logoutBtn);
-  } else {
-    const loginLink = el('a', { class: 'menu-item', href: '/login.html' }, 'Se connecter');
-    menu.append(loginLink);
-  }
-}
+function renderTopbarMenu() { /* menu supprimé: plus d'actions ici */ }
 
 function closeMenu() {
   const menu = document.getElementById('menu-dropdown');
@@ -368,28 +356,11 @@ async function ensureAuthOrRedirect() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  // Menu toggle & outside click
-  const toggle = document.getElementById('menu-toggle');
-  const dropdown = document.getElementById('menu-dropdown');
   const logo = document.querySelector('.brand-logo');
   const titleEl = document.querySelector('.brand-title');
   const goHome = (e) => { e.preventDefault(); window.location.assign('/'); };
   if (logo) { logo.style.cursor = 'pointer'; logo.title = "Retour à l'accueil"; logo.addEventListener('click', goHome); }
   if (titleEl) { titleEl.style.cursor = 'pointer'; titleEl.title = "Retour à l'accueil"; titleEl.addEventListener('click', goHome); }
-  if (toggle && dropdown) {
-    toggle.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isOpen = dropdown.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    });
-    document.addEventListener('click', (e) => {
-      if (!dropdown.classList.contains('open')) {return;}
-      if (!dropdown.contains(e.target) && e.target !== toggle) {
-        dropdown.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-      }
-    });
-  }
   const ok = await ensureAuthOrRedirect();
   if (!ok) {return;}
   document.getElementById('request-form').addEventListener('submit', onSubmit);
