@@ -78,70 +78,72 @@
           <div id="users-list"></div>
         </section>
 
-        <section class="card" id="security-panel">
-          <h2>Sécurité</h2>
-          <h3>Protection Fail2Ban</h3>
+        <!-- Sous-sections Sécurité (à la fin de l'espace admin) -->
+        <section class="card" id="security-fail2ban-panel">
+          <h2>Sécurité — Fail2Ban</h2>
           <p class="small muted">Protection automatique contre les tentatives de connexion répétées.</p>
           <form id="fail2ban-config-form" class="grid">
             <label class="switch-row">
               <input type="checkbox" id="fail2ban-enabled" class="toggle" />
-              <span>
-                Activer la protection Fail2Ban
-                <br /><span class="small muted">Bloque temporairement une IP après trop d'échecs.</span>
-              </span>
-            </label>
-            <label>
-              Nombre maximum de tentatives
-              <input type="number" id="fail2ban-max-attempts" min="1" max="50" value="5" required />
-              <span class="small muted">Plage conseillée: 3–10 (défaut: 5)</span>
-            </label>
-            <label>
-              Durée du bannissement (minutes)
-              <input type="number" id="fail2ban-ban-duration" min="1" max="1440" value="15" required />
-              <span class="small muted">1 à 1440 min (défaut: 15)</span>
-            </label>
-            <div class="form-actions">
-              <button type="submit">Sauvegarder</button>
-            </div>
-            <p id="fail2ban-config-msg" class="msg"></p>
-          </form>
-          <h3>IPs bannies</h3>
-          <p class="small muted">Liste des adresses IP actuellement bloquées.</p>
-          <div id="banned-ips-list"></div>
-          <div class="inline">
-            <button id="refresh-banned-ips" class="btn">Actualiser</button>
+            <span>
+              Activer la protection Fail2Ban
+              <br /><span class="small muted">Bloque temporairement une IP après trop d'échecs.</span>
+            </span>
+          </label>
+          <label>
+            Nombre maximum de tentatives
+            <input type="number" id="fail2ban-max-attempts" min="1" max="50" value="5" required />
+            <span class="small muted">Plage conseillée: 3–10 (défaut: 5)</span>
+          </label>
+          <label>
+            Durée du bannissement (minutes)
+            <input type="number" id="fail2ban-ban-duration" min="1" max="1440" value="15" required />
+            <span class="small muted">1 à 1440 min (défaut: 15)</span>
+          </label>
+          <div class="form-actions">
+            <button type="submit">Sauvegarder</button>
           </div>
+          <p id="fail2ban-config-msg" class="msg"></p>
+        </form>
+        <h3>IPs bannies</h3>
+        <p class="small muted">Liste des adresses IP actuellement bloquées.</p>
+        <div id="banned-ips-list"></div>
+        <div class="inline">
+          <button id="refresh-banned-ips" class="btn">Actualiser</button>
+        </div>
+        </section>
 
-          <h3>Configuration WebAuthn/Passkeys</h3>
-          <p class="small muted">Configurez les paramètres WebAuthn pour activer les passkeys en production.</p>
+        <section class="card" id="security-passkeys-panel">
+          <h2>Sécurité — Passkeys</h2>
+          <p class="small muted">Configurez WebAuthn pour activer les passkeys en production.</p>
           <form id="webauthn-config-form" class="grid">
             <label>
               RP Name (Nom de l'application)
-              <input type="text" id="webauthn-rp-name" placeholder="Application Demandes Cartes" />
-              <span class="small muted">Nom affiché lors de l'enregistrement d'une passkey</span>
-            </label>
-            <label>
-              RP ID (Domaine)
-              <input type="text" id="webauthn-rp-id" placeholder="affichapp.beaupeyrat.com" />
-              <span class="small muted">Domaine principal (sans sous-domaine ni port)</span>
-            </label>
-            <label>
-              Origin (URL complète)
-              <input type="text" id="webauthn-origin" placeholder="https://affichapp.beaupeyrat.com" />
-              <span class="small muted">URL complète avec https:// (sans / à la fin)</span>
-            </label>
-            <div class="form-actions">
-              <button type="submit">Sauvegarder</button>
-            </div>
-            <p id="webauthn-config-msg" class="msg"></p>
-          </form>
-
-          <h3>Gestion des Passkeys (Admin)</h3>
-          <p class="small muted">Visualisez et supprimez les passkeys de tous les utilisateurs.</p>
-          <div id="all-passkeys-list"></div>
-          <div class="inline">
-            <button id="refresh-all-passkeys" class="btn">Actualiser</button>
+            <input type="text" id="webauthn-rp-name" placeholder="Application Demandes Cartes" />
+            <span class="small muted">Nom affiché lors de l'enregistrement d'une passkey</span>
+          </label>
+          <label>
+            RP ID (Domaine)
+            <input type="text" id="webauthn-rp-id" placeholder="affichapp.beaupeyrat.com" />
+            <span class="small muted">Domaine principal (sans sous-domaine ni port)</span>
+          </label>
+          <label>
+            Origin (URL complète)
+            <input type="text" id="webauthn-origin" placeholder="https://affichapp.beaupeyrat.com" />
+            <span class="small muted">URL complète avec https:// (sans / à la fin)</span>
+          </label>
+          <div class="form-actions">
+            <button type="submit">Sauvegarder</button>
           </div>
+          <p id="webauthn-config-msg" class="msg"></p>
+        </form>
+
+        <h3>Gestion des Passkeys (Admin)</h3>
+        <p class="small muted">Visualisez et supprimez les passkeys de tous les utilisateurs.</p>
+        <div id="all-passkeys-list"></div>
+        <div class="inline">
+          <button id="refresh-all-passkeys" class="btn">Actualiser</button>
+        </div>
         </section>
       </section>
 
