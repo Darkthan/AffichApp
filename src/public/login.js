@@ -84,7 +84,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Ensure passkey button matches submit button width (visually consistent)
   function syncPasskeyWidth() {
-    if (!passkeyLoginBtn || !submitBtn) return;
+    if (!passkeyLoginBtn || !submitBtn) { return; }
     const rect = submitBtn.getBoundingClientRect();
     if (rect && rect.width) {
       passkeyLoginBtn.style.width = Math.round(rect.width) + 'px';
