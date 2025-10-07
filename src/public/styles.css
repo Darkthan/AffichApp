@@ -45,6 +45,10 @@ th { color: var(--muted); font-weight: 600; }
 .user-actions-cell { display: flex; align-items: center; gap: 10px; min-width: 420px; }
 .user-actions-cell .user-pwd-input { min-width: 240px; }
 
+/* Passkey login button: match default button size and use a modern color */
+#passkey-login-btn { padding: 10px 14px; background: #6366f1; color: #ffffff; }
+#passkey-login-btn:hover { filter: brightness(1.05); }
+
 /* Topbar */
 .topbar { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; background: var(--card); border-bottom: 1px solid var(--border); padding: 8px 16px; }
 .brand { display: flex; align-items: center; gap: 10px; }
