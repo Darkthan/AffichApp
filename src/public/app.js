@@ -43,89 +43,176 @@ function el(tag, attrs = {}, ...children) {
 }
 
 function renderList(items) {
+  // Séparer les demandes en cours et les cartes disponibles
+  const pendingItems = items.filter(it => it.status !== 'disponible');
+  const availableItems = items.filter(it => it.status === 'disponible');
+
+  // Afficher les demandes en cours
   const container = document.getElementById('list');
   container.innerHTML = '';
-  if (!items.length) {
-    container.appendChild(el('p', { class: 'muted' }, 'Aucune demande pour le moment.'));
-    return;
-  }
-  const table = el('table', { class: 'table' });
-  table.appendChild(
-    el(
-      'thead',
-      {},
+  if (!pendingItems.length) {
+    container.appendChild(el('p', { class: 'muted' }, 'Aucune demande en cours pour le moment.'));
+  } else {
+    const table = el('table', { class: 'table' });
+    table.appendChild(
       el(
-        'tr',
+        'thead',
         {},
-        el('th', {}, 'ID'),
-        el('th', {}, 'Demandeur'),
-        el('th', { class: 'col-email' }, 'Email'),
-        el('th', { class: 'col-type' }, 'Type'),
-        el('th', {}, 'Statut'),
-        el('th', {}, 'Actions')
-      )
-    )
-  );
-  const tbody = el('tbody');
-  const isAdmin = window.currentUser && window.currentUser.role === 'admin';
-  items.forEach((it) => {
-    const isOwner = window.currentUser && window.currentUser.id === it.ownerId;
-    const canDelete = isAdmin || isOwner;
-    const canEdit = isAdmin || isOwner;
-    const actions = [];
-    // Prepare edit icon button (we will append it LAST)
-    const iconEmoji = el('span', { class: 'icon-emoji', 'aria-hidden': 'true' }, '✏️');
-    const editAttrs = { class: 'icon-btn', title: canEdit ? 'Modifier' : 'Modification non autorisée', 'aria-label': 'Modifier' };
-    if (canEdit) { editAttrs.onclick = () => openEditDialog(it); } else { editAttrs.disabled = 'disabled'; }
-    const editButton = el('button', editAttrs, iconEmoji);
-    // Admin actions: status + delete
-    if (isAdmin) {
-      actions.push(
-        el('button', { class: 'btn small info', title: 'Marquer demandé', onclick: async () => { await updateStatus(it.id, 'demande'); await loadList(); } }, 'Demandé'),
-        el('button', { class: 'btn small warn', title: "Marquer impression", onclick: async () => { await updateStatus(it.id, 'impression'); await loadList(); } }, 'Impression'),
-        el('button', { class: 'btn small', title: 'Marquer disponible', onclick: async () => { await updateStatus(it.id, 'disponible'); await loadList(); } }, 'Disponible')
-      );
-    }
-    if (canDelete) {
-      // Force a line break before the delete button
-      actions.push(el('span', { class: 'flex-break' }));
-      actions.push(
         el(
-          'button',
-          {
-            class: 'btn small danger',
-            title: 'Supprimer',
-            onclick: async () => {
-              if (!confirm('Supprimer cette demande ?')) {return;}
-              try {
-                await deleteRequest(it.id);
-                await loadList();
-              } catch (e) {
-                alert('Suppression impossible: ' + (e.message || ''));
-              }
-            },
-          },
-          'Supprimer'
+          'tr',
+          {},
+          el('th', {}, 'ID'),
+          el('th', {}, 'Demandeur'),
+          el('th', { class: 'col-email' }, 'Email'),
+          el('th', { class: 'col-type' }, 'Type'),
+          el('th', {}, 'Statut'),
+          el('th', {}, 'Actions')
         )
-      );
-    }
-    // Append edit pencil LAST
-    actions.push(editButton);
-    tbody.appendChild(
-      el(
-        'tr',
-        {},
-        el('td', {}, String(it.id)),
-        el('td', {}, it.applicantName),
-        el('td', { class: 'col-email' }, it.email && it.email.trim() ? it.email : '—'),
-        el('td', { class: 'col-type' }, it.cardType),
-        el('td', {}, statusLabel(it.status)),
-        el('td', {}, el('div', { class: 'btn-group' }, actions.length ? actions : el('span', { class: 'muted' }, '—')))
       )
     );
-  });
-  table.appendChild(tbody);
-  container.appendChild(table);
+    const tbody = el('tbody');
+    const isAdmin = window.currentUser && window.currentUser.role === 'admin';
+    pendingItems.forEach((it) => {
+      const isOwner = window.currentUser && window.currentUser.id === it.ownerId;
+      const canDelete = isAdmin || isOwner;
+      const canEdit = isAdmin || isOwner;
+      const actions = [];
+      // Prepare edit icon button (we will append it LAST)
+      const iconEmoji = el('span', { class: 'icon-emoji', 'aria-hidden': 'true' }, '✏️');
+      const editAttrs = { class: 'icon-btn', title: canEdit ? 'Modifier' : 'Modification non autorisée', 'aria-label': 'Modifier' };
+      if (canEdit) { editAttrs.onclick = () => openEditDialog(it); } else { editAttrs.disabled = 'disabled'; }
+      const editButton = el('button', editAttrs, iconEmoji);
+      // Admin actions: status + delete
+      if (isAdmin) {
+        actions.push(
+          el('button', { class: 'btn small info', title: 'Marquer demandé', onclick: async () => { await updateStatus(it.id, 'demande'); await loadList(); } }, 'Demandé'),
+          el('button', { class: 'btn small warn', title: "Marquer impression", onclick: async () => { await updateStatus(it.id, 'impression'); await loadList(); } }, 'Impression'),
+          el('button', { class: 'btn small', title: 'Marquer disponible', onclick: async () => { await updateStatus(it.id, 'disponible'); await loadList(); } }, 'Disponible')
+        );
+      }
+      if (canDelete) {
+        // Force a line break before the delete button
+        actions.push(el('span', { class: 'flex-break' }));
+        actions.push(
+          el(
+            'button',
+            {
+              class: 'btn small danger',
+              title: 'Supprimer',
+              onclick: async () => {
+                if (!confirm('Supprimer cette demande ?')) {return;}
+                try {
+                  await deleteRequest(it.id);
+                  await loadList();
+                } catch (e) {
+                  alert('Suppression impossible: ' + (e.message || ''));
+                }
+              },
+            },
+            'Supprimer'
+          )
+        );
+      }
+      // Append edit pencil LAST
+      actions.push(editButton);
+      tbody.appendChild(
+        el(
+          'tr',
+          {},
+          el('td', {}, String(it.id)),
+          el('td', {}, it.applicantName),
+          el('td', { class: 'col-email' }, it.email && it.email.trim() ? it.email : '—'),
+          el('td', { class: 'col-type' }, it.cardType),
+          el('td', {}, statusLabel(it.status)),
+          el('td', {}, el('div', { class: 'btn-group' }, actions.length ? actions : el('span', { class: 'muted' }, '—')))
+        )
+      );
+    });
+    table.appendChild(tbody);
+    container.appendChild(table);
+  }
+
+  // Afficher les cartes disponibles
+  const availableContainer = document.getElementById('available-list');
+  availableContainer.innerHTML = '';
+  if (!availableItems.length) {
+    availableContainer.appendChild(el('p', { class: 'muted' }, 'Aucune carte disponible pour le moment.'));
+  } else {
+    const table = el('table', { class: 'table' });
+    table.appendChild(
+      el(
+        'thead',
+        {},
+        el(
+          'tr',
+          {},
+          el('th', {}, 'ID'),
+          el('th', {}, 'Demandeur'),
+          el('th', { class: 'col-email' }, 'Email'),
+          el('th', { class: 'col-type' }, 'Type'),
+          el('th', {}, 'Actions')
+        )
+      )
+    );
+    const tbody = el('tbody');
+    const isAdmin = window.currentUser && window.currentUser.role === 'admin';
+    availableItems.forEach((it) => {
+      const isOwner = window.currentUser && window.currentUser.id === it.ownerId;
+      const canDelete = isAdmin || isOwner;
+      const canEdit = isAdmin || isOwner;
+      const actions = [];
+      // Prepare edit icon button
+      const iconEmoji = el('span', { class: 'icon-emoji', 'aria-hidden': 'true' }, '✏️');
+      const editAttrs = { class: 'icon-btn', title: canEdit ? 'Modifier' : 'Modification non autorisée', 'aria-label': 'Modifier' };
+      if (canEdit) { editAttrs.onclick = () => openEditDialog(it); } else { editAttrs.disabled = 'disabled'; }
+      const editButton = el('button', editAttrs, iconEmoji);
+      // Admin actions: status changes
+      if (isAdmin) {
+        actions.push(
+          el('button', { class: 'btn small info', title: 'Remettre en demandé', onclick: async () => { await updateStatus(it.id, 'demande'); await loadList(); } }, 'Demandé'),
+          el('button', { class: 'btn small warn', title: "Remettre en impression", onclick: async () => { await updateStatus(it.id, 'impression'); await loadList(); } }, 'Impression')
+        );
+      }
+      if (canDelete) {
+        // Force a line break before the delete button
+        actions.push(el('span', { class: 'flex-break' }));
+        actions.push(
+          el(
+            'button',
+            {
+              class: 'btn small danger',
+              title: 'Supprimer',
+              onclick: async () => {
+                if (!confirm('Supprimer cette carte ?')) {return;}
+                try {
+                  await deleteRequest(it.id);
+                  await loadList();
+                } catch (e) {
+                  alert('Suppression impossible: ' + (e.message || ''));
+                }
+              },
+            },
+            'Supprimer'
+          )
+        );
+      }
+      // Append edit pencil LAST
+      actions.push(editButton);
+      tbody.appendChild(
+        el(
+          'tr',
+          {},
+          el('td', {}, String(it.id)),
+          el('td', {}, it.applicantName),
+          el('td', { class: 'col-email' }, it.email && it.email.trim() ? it.email : '—'),
+          el('td', { class: 'col-type' }, it.cardType),
+          el('td', {}, el('div', { class: 'btn-group' }, actions.length ? actions : el('span', { class: 'muted' }, '—')))
+        )
+      );
+    });
+    table.appendChild(tbody);
+    availableContainer.appendChild(table);
+  }
 }
 
 async function deleteRequest(id) {
@@ -230,6 +317,7 @@ function logout() {
 function renderAuth() {
   const requestSection = document.getElementById('request-section');
   const requestsListSection = document.getElementById('requests-list-section');
+  const availableCardsSection = document.getElementById('available-cards-section');
   const requestForm = document.getElementById('request-form');
   const callForm = document.getElementById('call-form');
   const isAuth = !!window.currentUser;
@@ -238,16 +326,19 @@ function renderAuth() {
     if (window.currentUser.role === 'appel') {
       if (requestSection) { requestSection.classList.add('hidden'); requestSection.setAttribute('hidden',''); }
       if (requestsListSection) { requestsListSection.classList.add('hidden'); requestsListSection.setAttribute('hidden',''); }
+      if (availableCardsSection) { availableCardsSection.classList.add('hidden'); availableCardsSection.setAttribute('hidden',''); }
       if (requestForm) { requestForm.classList.add('hidden'); requestForm.setAttribute('hidden',''); }
     } else {
       if (requestSection) { requestSection.classList.remove('hidden'); requestSection.removeAttribute('hidden'); }
       if (requestsListSection) { requestsListSection.classList.remove('hidden'); requestsListSection.removeAttribute('hidden'); }
+      if (availableCardsSection) { availableCardsSection.classList.remove('hidden'); availableCardsSection.removeAttribute('hidden'); }
       if (requestForm) { requestForm.classList.remove('hidden'); requestForm.removeAttribute('hidden'); }
     }
     if (callForm) { callForm.classList.remove('hidden'); callForm.removeAttribute('hidden'); }
   } else {
     if (requestSection) { requestSection.classList.add('hidden'); requestSection.setAttribute('hidden',''); }
     if (requestsListSection) { requestsListSection.classList.add('hidden'); requestsListSection.setAttribute('hidden',''); }
+    if (availableCardsSection) { availableCardsSection.classList.add('hidden'); availableCardsSection.setAttribute('hidden',''); }
     if (requestForm) { requestForm.classList.add('hidden'); requestForm.setAttribute('hidden',''); }
     if (callForm) { callForm.classList.add('hidden'); callForm.setAttribute('hidden',''); }
   }
