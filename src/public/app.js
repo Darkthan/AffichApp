@@ -509,18 +509,19 @@ function openEditDialog(item) {
   typeSelect.appendChild(el('option', { value: '' }, '-- Choisir --'));
   (cardTypesCache || []).forEach((t) => typeSelect.appendChild(el('option', { value: t.code, selected: item.cardType === t.code ? 'selected' : undefined }, t.label)));
   const detailsInput = el('textarea', { rows: '3' }, item.details || '');
+  const footer = el('div', { class: 'modal-footer' },
+    el('button', { type: 'button', class: 'btn secondary', onclick: () => { document.body.removeChild(backdrop); } }, 'Annuler'),
+    el('button', { type: 'submit', class: 'btn' }, 'Enregistrer')
+  );
   form.append(
     el('label', {}, 'Nom du demandeur', nameInput),
     el('label', {}, 'Email', emailInput),
     el('label', {}, 'Type de carte', typeSelect),
     el('label', {}, 'Détails', detailsInput),
-  );
-  const footer = el('div', { class: 'modal-footer' },
-    el('button', { type: 'button', class: 'btn secondary', onclick: () => { document.body.removeChild(backdrop); } }, 'Annuler'),
-    el('button', { type: 'submit', class: 'btn' }, 'Enregistrer')
+    footer
   );
   const msg = el('p', { class: 'msg', id: 'edit-msg' });
-  modal.append(header, form, footer, msg);
+  modal.append(header, form, msg);
   backdrop.appendChild(modal);
   document.body.appendChild(backdrop);
 
