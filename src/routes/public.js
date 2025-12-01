@@ -136,6 +136,32 @@ router.get('/display-static', async (req, res, next) => {
   }
 });
 
+// Public endpoint for all requests (no auth required, for display purposes)
+router.get('/all-requests', async (req, res, next) => {
+  try {
+    const [items, types] = await Promise.all([db.getAll(), getTypes()]);
+    const typeMap = Object.fromEntries(types.map((t) => [t.code, t.label]));
+
+    // Return all requests with safe fields for public display
+    const safeRequests = items.map((x) => ({
+      id: x.id,
+      applicantName: x.applicantName,
+      cardType: x.cardType,
+      cardTypeLabel: typeMap[x.cardType] || x.cardType,
+      status: x.status,
+      createdAt: x.createdAt,
+      updatedAt: x.updatedAt,
+      availableSince: x.status === 'disponible' ? (x.updatedAt || x.createdAt) : null,
+      email: x.email || null,
+      details: x.details || null
+    }));
+
+    res.json(safeRequests);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Serve logo if available
 router.get('/logo', async (req, res) => {
   try {

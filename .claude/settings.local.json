@@ -14,7 +14,10 @@
       "Bash(npm install)",
       "Bash(npm audit:*)",
       "Bash(npm install:*)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command \"Get-Process -Name node | Stop-Process -Force\")"
     ],
     "deny": [],
     "ask": []
