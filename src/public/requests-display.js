@@ -1,3 +1,7 @@
+// Track previous request IDs to detect new ones
+let previousRequestIds = new Set();
+let isFirstLoad = true;
+
 function el(tag, attrs = {}, ...children) {
   const e = document.createElement(tag);
   Object.entries(attrs).forEach(([k, v]) => {
@@ -6,6 +10,30 @@ function el(tag, attrs = {}, ...children) {
   });
   children.flat().forEach((c) => e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c));
   return e;
+}
+
+// Play notification sound using Web Audio API
+function playNotificationSound() {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Pleasant notification tone
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  } catch (e) {
+    console.error('Could not play notification sound:', e);
+  }
 }
 
 function getStatusClass(status) {
@@ -69,6 +97,23 @@ async function loadRequests() {
       throw new Error(`HTTP ${res.status}`);
     }
     const requests = await res.json();
+
+    // Detect new requests (skip on first load)
+    if (!isFirstLoad) {
+      const currentRequestIds = new Set(requests.map(r => r.id));
+      const newRequests = requests.filter(r => !previousRequestIds.has(r.id));
+
+      if (newRequests.length > 0) {
+        console.log(`${newRequests.length} nouvelle(s) demande(s) détectée(s)`);
+        playNotificationSound();
+      }
+
+      previousRequestIds = currentRequestIds;
+    } else {
+      // First load - just store the IDs
+      previousRequestIds = new Set(requests.map(r => r.id));
+      isFirstLoad = false;
+    }
 
     // Group by status
     const byStatus = {
