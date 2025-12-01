@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demandes de cartes</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      body { background: #0b1220; }
+      .screen { max-width: 1400px; margin: 0 auto; padding: 24px; padding-top: 96px; transform-origin: top left; position: relative; }
+      .title { font-size: 2.6rem; font-weight: 800; margin: 12px 0 24px; }
+      .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 22px; }
+      .card-item { background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px; box-shadow: 0 10px 24px rgba(0,0,0,0.30); }
+      .status-pending { background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%); }
+      .status-available { background: linear-gradient(135deg, #365314 0%, #166534 100%); }
+      .status-called { background: linear-gradient(135deg, #7c2d12 0%, #991b1b 100%); }
+      .status-delivered { background: linear-gradient(135deg, #164e63 0%, #0f766e 100%); }
+      .name { font-size: 2.2rem; line-height: 1.2; font-weight: 800; margin-bottom: 10px; letter-spacing: .2px; word-break: break-word; color: white; }
+      .muted { color: #d1d5db; font-size: 1.05rem; }
+      .timestamp { font-size: 1rem; color: #d1d5db; margin-top: 6px; }
+      .card-type { font-size: 1.4rem; font-weight: 600; color: white; margin-bottom: 8px; }
+      .status-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.95rem; font-weight: 600; margin-top: 8px; background: rgba(255,255,255,0.2); color: white; }
+      .details { font-size: 0.95rem; color: #9ca3af; margin-top: 8px; font-style: italic; }
+      .top-actions { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 10; }
+      .section { margin-bottom: 40px; }
+    </style>
+  </head>
+  <body>
+    <div class="screen">
+      <img id="logo" class="logo" src="/public/logo" alt="Logo" style="position:absolute;top:16px;left:16px;height:64px;width:auto;object-fit:contain;" />
+      <div class="title">Demandes de cartes</div>
+
+      <div class="section">
+        <h2 class="title" style="font-size: 1.8rem; margin-bottom: 16px;">En attente</h2>
+        <div id="pending-list" class="grid-cards"></div>
+      </div>
+
+      <div class="section">
+        <h2 class="title" style="font-size: 1.8rem; margin-bottom: 16px;">Disponibles</h2>
+        <div id="available-list" class="grid-cards"></div>
+      </div>
+
+      <div class="section">
+        <h2 class="title" style="font-size: 1.8rem; margin-bottom: 16px;">Appelées</h2>
+        <div id="called-list" class="grid-cards"></div>
+      </div>
+
+      <div class="section">
+        <h2 class="title" style="font-size: 1.8rem; margin-bottom: 16px;">Livrées</h2>
+        <div id="delivered-list" class="grid-cards"></div>
+      </div>
+
+      <p class="muted" id="last-refresh"></p>
+    </div>
+    <script src="/requests-display.js" defer></script>
+  </body>
+</html>
