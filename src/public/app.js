@@ -228,6 +228,39 @@ async function loadList() {
   }
 }
 
+async function exportRequestsTxt() {
+  const button = document.getElementById('export-requests-txt-btn');
+  const msg = document.getElementById('export-requests-msg');
+  if (button) { button.disabled = true; }
+  if (msg) { msg.textContent = 'Préparation de l\'export…'; msg.className = 'msg'; }
+
+  try {
+    const res = await fetch('/api/requests/export-txt', {
+      headers: { Authorization: 'Bearer ' + authToken },
+    });
+    if (!res.ok) { throw new Error('Export échoué'); }
+
+    const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const filenameMatch = disposition.match(/filename="?([^";]+)"?/i);
+    const filename = filenameMatch ? filenameMatch[1] : 'demandes-demandeurs.txt';
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    if (msg) { msg.textContent = 'Export effectué ✔'; msg.className = 'msg success'; }
+  } catch {
+    if (msg) { msg.textContent = 'Échec de l\'export'; msg.className = 'msg error'; }
+  } finally {
+    if (button) { button.disabled = false; }
+  }
+}
+
 async function updateStatus(id, status) {
   try {
     await fetchJSON(`/api/requests/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
@@ -504,6 +537,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   });*/
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) {logoutBtn.addEventListener('click', () => logout());}
+  const exportRequestsBtn = document.getElementById('export-requests-txt-btn');
+  if (exportRequestsBtn) {exportRequestsBtn.addEventListener('click', exportRequestsTxt);}
   const callForm = document.getElementById('call-form');
   if (callForm) {callForm.addEventListener('submit', onCallSubmit);}
 

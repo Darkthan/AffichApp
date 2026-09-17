@@ -20,13 +20,33 @@ function sseBroadcast(event, payload) {
   }
 }
 
+function requestsVisibleTo(items, user) {
+  if (user.role === 'admin' || user.role === 'appel') { return items; }
+  return items.filter((item) => item.ownerId === user.id);
+}
+
 // GET /api/requests
 router.get('/', requireAuth, async (req, res, next) => {
   try {
     const items = await db.getAll();
-    // Admins and 'appel' role can view all requests; others see only their own
-    if (req.user.role === 'admin' || req.user.role === 'appel') {return res.json(items);}
-    return res.json(items.filter((x) => x.ownerId === req.user.id));
+    return res.json(requestsVisibleTo(items, req.user));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/requests/export-txt -> one "Demandeur" column, matching list permissions
+router.get('/export-txt', requireAuth, async (req, res, next) => {
+  try {
+    const items = requestsVisibleTo(await db.getAll(), req.user)
+      .filter((item) => item.status !== 'disponible');
+    const names = items.map((item) => String(item.applicantName || '').replace(/[\r\n]+/g, ' ').trim());
+    const txt = ['Demandeur', ...names].join('\r\n') + '\r\n';
+    const stamp = new Date().toISOString().slice(0, 10);
+
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="demandes-demandeurs-${stamp}.txt"`);
+    res.status(200).send(txt);
   } catch (err) {
     next(err);
   }
