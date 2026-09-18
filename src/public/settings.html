@@ -78,6 +78,53 @@
           <div id="users-list"></div>
         </section>
 
+        <section class="card" id="magic-link-settings-panel">
+          <h2>Connexion par magic link</h2>
+          <p class="small muted">
+            Configurez l'envoi des liens de connexion. Les variables d'environnement restent prioritaires et les champs concernés sont verrouillés ci-dessous.
+          </p>
+          <form id="magic-link-settings-form" class="grid">
+            <label>
+              URL publique de l'application
+              <input type="url" id="magic-app-base-url" placeholder="https://cartes.exemple.fr" />
+            </label>
+            <label>
+              Serveur SMTP
+              <input type="text" id="magic-smtp-host" placeholder="smtp.exemple.fr" />
+            </label>
+            <label>
+              Port SMTP
+              <input type="number" id="magic-smtp-port" min="1" max="65535" value="587" required />
+            </label>
+            <label class="switch-row">
+              <input type="checkbox" id="magic-smtp-secure" class="toggle" />
+              <span>Connexion TLS directe <span class="small muted">(généralement pour le port 465)</span></span>
+            </label>
+            <label>
+              Utilisateur SMTP
+              <input type="text" id="magic-smtp-user" autocomplete="username" />
+            </label>
+            <label>
+              Mot de passe SMTP
+              <input type="password" id="magic-smtp-pass" autocomplete="new-password" placeholder="Laisser vide pour conserver le mot de passe" />
+              <span class="small muted">Le mot de passe est chiffré avant son enregistrement et n'est jamais réaffiché.</span>
+            </label>
+            <label class="switch-row">
+              <input type="checkbox" id="magic-clear-smtp-pass" />
+              <span>Effacer le mot de passe SMTP enregistré</span>
+            </label>
+            <label>
+              Expéditeur
+              <input type="text" id="magic-mail-from" placeholder="Demandes de cartes &lt;no-reply@exemple.fr&gt;" />
+            </label>
+            <div class="form-actions">
+              <button type="submit">Sauvegarder la configuration</button>
+            </div>
+            <p id="magic-link-settings-source" class="small muted"></p>
+            <p id="magic-link-settings-msg" class="msg" aria-live="polite"></p>
+          </form>
+        </section>
+
         <!-- Sous-sections Sécurité (à la fin de l'espace admin) -->
         <section class="card" id="security-fail2ban-panel">
           <h2>Sécurité — Fail2Ban</h2>

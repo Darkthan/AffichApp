@@ -4,6 +4,7 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 const { saveLogoFromData, getSettings, updateSettings } = require('../services/settings');
 const { getAll: getCardTypes } = require('../services/cardTypes');
 const suggestions = require('../services/suggestions');
+const mailer = require('../services/mailer');
 
 const router = express.Router();
 
@@ -132,6 +133,70 @@ router.patch('/webauthn', requireAuth, requireRole('admin'), async (req, res) =>
     res.json({ ok: true });
   } catch (e) {
     console.error('Update webauthn settings error:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+function safeMagicLinkConfiguration(config) {
+  return {
+    appBaseUrl: config.appBaseUrl,
+    smtpHost: config.smtpHost,
+    smtpPort: config.smtpPort,
+    smtpSecure: config.smtpSecure,
+    smtpUser: config.smtpUser,
+    mailFrom: config.mailFrom,
+    passwordConfigured: Boolean(config.smtpPass),
+    configured: mailer.isConfigured(config),
+    environmentOverrides: config.environmentOverrides,
+  };
+}
+
+router.get('/magic-link', requireAuth, requireRole('admin'), async (_req, res) => {
+  try {
+    const config = await mailer.getConfiguration();
+    res.json(safeMagicLinkConfiguration(config));
+  } catch (error) {
+    console.error('Get magic-link settings error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+router.patch('/magic-link', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const body = req.body || {};
+    const appBaseUrl = String(body.appBaseUrl || '').trim().replace(/\/$/, '');
+    const smtpHost = String(body.smtpHost || '').trim();
+    const smtpPort = Number.parseInt(body.smtpPort, 10);
+    const smtpUser = String(body.smtpUser || '').trim();
+    const smtpPass = typeof body.smtpPass === 'string' ? body.smtpPass : '';
+    const mailFrom = String(body.mailFrom || '').trim();
+
+    if (appBaseUrl) {
+      let parsed;
+      try { parsed = new URL(appBaseUrl); } catch { return res.status(400).json({ error: 'Invalid APP_BASE_URL' }); }
+      if (!['http:', 'https:'].includes(parsed.protocol)) { return res.status(400).json({ error: 'Invalid APP_BASE_URL' }); }
+    }
+    if (!Number.isInteger(smtpPort) || smtpPort < 1 || smtpPort > 65535) {
+      return res.status(400).json({ error: 'Invalid SMTP port' });
+    }
+    if (smtpPass.length > 1024) { return res.status(400).json({ error: 'SMTP password too long' }); }
+
+    const config = await mailer.updateStoredConfiguration({
+      appBaseUrl,
+      smtpHost,
+      smtpPort,
+      smtpSecure: body.smtpSecure === true,
+      smtpUser,
+      smtpPass,
+      clearPassword: body.clearPassword === true,
+      mailFrom,
+    });
+    res.json(safeMagicLinkConfiguration(config));
+  } catch (error) {
+    console.error('Update magic-link settings error:', error);
+    if (error.code === 'E_ENCRYPTION_KEY_REQUIRED') {
+      return res.status(503).json({ error: 'Encryption key is not configured' });
+    }
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

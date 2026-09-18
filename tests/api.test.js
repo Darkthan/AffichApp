@@ -9,6 +9,10 @@ describe('API smoke', () => {
   let token;
   let usersBackup;
   let requestsBackup;
+  let magicLinksBackup;
+  let magicLinksFileExisted;
+  let settingsBackup;
+  let settingsFileExisted;
   let createdRequestId;
   let createdApplicantName;
 
@@ -16,8 +20,14 @@ describe('API smoke', () => {
     // Backup and reset users.json to empty array to ensure clean test state
     const usersFile = path.join(process.cwd(), 'data', 'users.json');
     const requestsFile = path.join(process.cwd(), 'data', 'requests.json');
+    const magicLinksFile = path.join(process.cwd(), 'data', 'magic-links.json');
+    const settingsFile = path.join(process.cwd(), 'data', 'settings.json');
     usersBackup = await fs.readFile(usersFile, 'utf-8').catch(() => '[]');
     requestsBackup = await fs.readFile(requestsFile, 'utf-8').catch(() => '[]');
+    magicLinksBackup = await fs.readFile(magicLinksFile, 'utf-8').catch(() => null);
+    magicLinksFileExisted = magicLinksBackup !== null;
+    settingsBackup = await fs.readFile(settingsFile, 'utf-8').catch(() => null);
+    settingsFileExisted = settingsBackup !== null;
     await fs.writeFile(usersFile, '[]', 'utf-8');
 
     // Seed default admin with password 'admin123'
@@ -38,6 +48,12 @@ describe('API smoke', () => {
     }
     const requestsFile = path.join(process.cwd(), 'data', 'requests.json');
     await fs.writeFile(requestsFile, requestsBackup || '[]', 'utf-8');
+    const magicLinksFile = path.join(process.cwd(), 'data', 'magic-links.json');
+    if (magicLinksFileExisted) { await fs.writeFile(magicLinksFile, magicLinksBackup, 'utf-8'); }
+    else { await fs.unlink(magicLinksFile).catch((error) => { if (error.code !== 'ENOENT') { throw error; } }); }
+    const settingsFile = path.join(process.cwd(), 'data', 'settings.json');
+    if (settingsFileExisted) { await fs.writeFile(settingsFile, settingsBackup, 'utf-8'); }
+    else { await fs.unlink(settingsFile).catch((error) => { if (error.code !== 'ENOENT') { throw error; } }); }
   });
 
   it('GET /health returns ok', async () => {
@@ -96,6 +112,85 @@ describe('API smoke', () => {
   it('POST /api/auth/login with wrong password is 401', async () => {
     const res = await request(app).post('/api/auth/login').set('X-Requested-With', 'XMLHttpRequest').send({ email: 'admin@example.com', password: 'wrong' });
     expect(res.status).toBe(401);
+  });
+
+  it('creates and consumes a one-time magic link', async () => {
+    const requested = await request(app)
+      .post('/api/auth/magic-link/request')
+      .set('X-Requested-With', 'XMLHttpRequest')
+      .send({ email: 'admin@example.com' });
+    expect(requested.status).toBe(202);
+    expect(requested.body.magicLink).toBeTruthy();
+
+    const tokenFromLink = new URL(requested.body.magicLink).searchParams.get('magic_token');
+    const verified = await request(app)
+      .post('/api/auth/magic-link/verify')
+      .set('X-Requested-With', 'XMLHttpRequest')
+      .send({ token: tokenFromLink });
+    expect(verified.status).toBe(200);
+    expect(verified.body.token).toBeTruthy();
+    expect(verified.body.user.email).toBe('admin@example.com');
+
+    const reused = await request(app)
+      .post('/api/auth/magic-link/verify')
+      .set('X-Requested-With', 'XMLHttpRequest')
+      .send({ token: tokenFromLink });
+    expect(reused.status).toBe(401);
+  });
+
+  it('does not reveal whether a magic-link account exists', async () => {
+    const requested = await request(app)
+      .post('/api/auth/magic-link/request')
+      .set('X-Requested-With', 'XMLHttpRequest')
+      .send({ email: 'unknown@example.com' });
+    expect(requested.status).toBe(202);
+    expect(requested.body.magicLink).toBeUndefined();
+  });
+
+  it('stores fallback SMTP settings with an encrypted password and keeps environment priority', async () => {
+    const names = ['APP_BASE_URL', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURE', 'SMTP_USER', 'SMTP_PASS', 'MAIL_FROM', 'SETTINGS_ENCRYPTION_KEY'];
+    const previous = Object.fromEntries(names.map((name) => [name, process.env[name]]));
+    names.forEach((name) => { delete process.env[name]; });
+    process.env.SETTINGS_ENCRYPTION_KEY = 'test-only-encryption-key';
+
+    try {
+      const saved = await request(app)
+        .patch('/api/settings/magic-link')
+        .set('Authorization', 'Bearer ' + token)
+        .set('X-Requested-With', 'XMLHttpRequest')
+        .send({
+          appBaseUrl: 'https://cartes.example.com',
+          smtpHost: 'smtp.example.com',
+          smtpPort: 587,
+          smtpSecure: false,
+          smtpUser: 'mailer',
+          smtpPass: 'very-secret-password',
+          mailFrom: 'Cartes <no-reply@example.com>',
+        });
+      expect(saved.status).toBe(200);
+      expect(saved.body.configured).toBe(true);
+      expect(saved.body.passwordConfigured).toBe(true);
+      expect(saved.body.smtpPass).toBeUndefined();
+
+      const settingsFile = path.join(process.cwd(), 'data', 'settings.json');
+      const stored = await fs.readFile(settingsFile, 'utf-8');
+      expect(stored).not.toContain('very-secret-password');
+      expect(JSON.parse(stored).magicLink.smtpPassEncrypted).toMatch(/^enc:v1:/);
+
+      process.env.SMTP_HOST = 'smtp.from-environment.example';
+      const effective = await request(app)
+        .get('/api/settings/magic-link')
+        .set('Authorization', 'Bearer ' + token);
+      expect(effective.status).toBe(200);
+      expect(effective.body.smtpHost).toBe('smtp.from-environment.example');
+      expect(effective.body.environmentOverrides.smtpHost).toBe(true);
+      expect(effective.body.smtpPass).toBeUndefined();
+    } finally {
+      names.forEach((name) => {
+        if (previous[name] === undefined) { delete process.env[name]; }
+        else { process.env[name] = previous[name]; }
+      });
+    }
   });
 
   it('POST /api/auth/register creates a new user and appears in GET /api/users', async () => {

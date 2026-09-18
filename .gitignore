@@ -2,7 +2,7 @@ node_modules/
 .env
 data/*.json
 data/.jwt-secret
+data/.settings-encryption-key
 dist/
 coverage/
 *.log
-

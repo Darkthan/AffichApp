@@ -39,9 +39,41 @@ async function login(email, password, remember) {
   window.location.replace('/');
 }
 
+function storeAuthToken(token, remember = false) {
+  authToken = token;
+  try {
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    if (remember) { localStorage.setItem('token', token); }
+    else { sessionStorage.setItem('token', token); }
+  } catch {}
+}
+
+async function verifyMagicLink(token) {
+  const res = await fetchJSON('/api/auth/magic-link/verify', {
+    method: 'POST',
+    body: JSON.stringify({ token })
+  });
+  storeAuthToken(res.token);
+  window.location.replace('/');
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   const form = document.getElementById('login-form');
   const msg = document.getElementById('login-msg');
+
+  const magicToken = new window.URLSearchParams(window.location.search).get('magic_token');
+  if (magicToken) {
+    msg.textContent = 'Vérification du lien de connexion…';
+    try {
+      await verifyMagicLink(magicToken);
+      return;
+    } catch {
+      window.history.replaceState({}, '', '/login.html');
+      msg.textContent = 'Ce lien de connexion est invalide, expiré ou déjà utilisé.';
+      msg.className = 'msg error';
+    }
+  }
 
   // If already logged in (token), validate and go home
   if (authToken) {
@@ -76,6 +108,40 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     }
   });
+
+  const magicForm = document.getElementById('magic-link-form');
+  const magicMsg = document.getElementById('magic-link-msg');
+  if (magicForm) {
+    magicForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const button = magicForm.querySelector('button[type="submit"]');
+      button.disabled = true;
+      magicMsg.textContent = 'Envoi en cours…';
+      magicMsg.className = 'msg';
+      try {
+        const fd = new FormData(magicForm);
+        const result = await fetchJSON('/api/auth/magic-link/request', {
+          method: 'POST',
+          body: JSON.stringify({ email: fd.get('email') })
+        });
+        magicMsg.textContent = result.message;
+        magicMsg.className = 'msg success';
+        if (result.magicLink) {
+          const link = document.createElement('a');
+          link.href = result.magicLink;
+          link.textContent = 'Ouvrir le lien de développement';
+          magicMsg.append(document.createElement('br'), link);
+        }
+      } catch (error) {
+        magicMsg.textContent = error.status === 503
+          ? 'L’envoi par e-mail n’est pas encore configuré sur ce serveur.'
+          : 'Impossible de générer le lien de connexion.';
+        magicMsg.className = 'msg error';
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
 
   // === PASSKEY LOGIN ===
   const passkeyLoginBtn = document.getElementById('passkey-login-btn');

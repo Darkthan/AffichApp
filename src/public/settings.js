@@ -308,6 +308,90 @@ async function onLogoSubmit(e) {
   reader.readAsDataURL(file);
 }
 
+function renderMagicLinkSettings(config) {
+  const overrides = config.environmentOverrides || {};
+  const fields = {
+    appBaseUrl: document.getElementById('magic-app-base-url'),
+    smtpHost: document.getElementById('magic-smtp-host'),
+    smtpPort: document.getElementById('magic-smtp-port'),
+    smtpSecure: document.getElementById('magic-smtp-secure'),
+    smtpUser: document.getElementById('magic-smtp-user'),
+    smtpPass: document.getElementById('magic-smtp-pass'),
+    mailFrom: document.getElementById('magic-mail-from'),
+  };
+  fields.appBaseUrl.value = config.appBaseUrl || '';
+  fields.smtpHost.value = config.smtpHost || '';
+  fields.smtpPort.value = config.smtpPort || 587;
+  fields.smtpSecure.checked = config.smtpSecure === true;
+  fields.smtpUser.value = config.smtpUser || '';
+  fields.smtpPass.value = '';
+  fields.smtpPass.placeholder = overrides.smtpPass
+    ? 'Défini par la variable SMTP_PASS'
+    : (config.passwordConfigured ? 'Mot de passe enregistré (laisser vide pour conserver)' : 'Mot de passe SMTP');
+  fields.mailFrom.value = config.mailFrom || '';
+
+  Object.entries(fields).forEach(([name, field]) => {
+    field.disabled = overrides[name] === true;
+    field.title = overrides[name] ? 'Cette valeur est définie par une variable d’environnement.' : '';
+  });
+  const clearPassword = document.getElementById('magic-clear-smtp-pass');
+  clearPassword.checked = false;
+  clearPassword.disabled = overrides.smtpPass === true;
+
+  const source = document.getElementById('magic-link-settings-source');
+  const labels = {
+    appBaseUrl: 'URL publique', smtpHost: 'serveur SMTP', smtpPort: 'port', smtpSecure: 'TLS',
+    smtpUser: 'utilisateur', smtpPass: 'mot de passe', mailFrom: 'expéditeur'
+  };
+  const environmentFields = Object.keys(overrides).filter((name) => overrides[name]).map((name) => labels[name]);
+  source.textContent = environmentFields.length
+    ? `Valeurs imposées par l’environnement : ${environmentFields.join(', ')}.`
+    : 'Toutes les valeurs proviennent de la configuration administrateur.';
+}
+
+async function loadMagicLinkSettings() {
+  const config = await fetchJSON('/api/settings/magic-link');
+  renderMagicLinkSettings(config);
+  return config;
+}
+
+async function onMagicLinkSettingsSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type="submit"]');
+  const msg = document.getElementById('magic-link-settings-msg');
+  button.disabled = true;
+  msg.textContent = 'Enregistrement…';
+  msg.className = 'msg';
+  try {
+    const config = await fetchJSON('/api/settings/magic-link', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        appBaseUrl: document.getElementById('magic-app-base-url').value.trim(),
+        smtpHost: document.getElementById('magic-smtp-host').value.trim(),
+        smtpPort: Number(document.getElementById('magic-smtp-port').value),
+        smtpSecure: document.getElementById('magic-smtp-secure').checked,
+        smtpUser: document.getElementById('magic-smtp-user').value.trim(),
+        smtpPass: document.getElementById('magic-smtp-pass').value,
+        clearPassword: document.getElementById('magic-clear-smtp-pass').checked,
+        mailFrom: document.getElementById('magic-mail-from').value.trim(),
+      })
+    });
+    renderMagicLinkSettings(config);
+    msg.textContent = config.configured
+      ? 'Configuration enregistrée — les magic links sont opérationnels ✔'
+      : 'Configuration enregistrée, mais elle est encore incomplète.';
+    msg.className = config.configured ? 'msg success' : 'msg error';
+  } catch (error) {
+    msg.textContent = error.status === 503
+      ? 'Clé de chiffrement absente sur le serveur.'
+      : 'Impossible d’enregistrer la configuration.';
+    msg.className = 'msg error';
+  } finally {
+    button.disabled = false;
+  }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   // Menu toggle
   const toggle = document.getElementById('menu-toggle');
@@ -352,6 +436,15 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     const logoForm = document.getElementById('logo-form');
     if (logoForm) {logoForm.addEventListener('submit', onLogoSubmit);}
+    const magicLinkSettingsForm = document.getElementById('magic-link-settings-form');
+    if (magicLinkSettingsForm) {
+      magicLinkSettingsForm.addEventListener('submit', onMagicLinkSettingsSubmit);
+      try { await loadMagicLinkSettings(); } catch {
+        const magicMsg = document.getElementById('magic-link-settings-msg');
+        magicMsg.textContent = 'Impossible de charger la configuration.';
+        magicMsg.className = 'msg error';
+      }
+    }
 
     const importForm = document.getElementById('import-suggestions-form');
     if (importForm) {

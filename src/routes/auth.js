@@ -1,10 +1,12 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { getByEmail, create, seedAdminIfEmpty } = require('../services/users');
+const { getByEmail, getById, create, seedAdminIfEmpty } = require('../services/users');
 const { verifyPassword, signToken } = require('../services/auth');
 const { requireAuth } = require('../middleware/auth');
 const fail2ban = require('../services/fail2ban');
 const { getClientIp } = require('../utils/ip');
+const magicLinks = require('../services/magicLinks');
+const mailer = require('../services/mailer');
 
 const router = express.Router();
 
@@ -20,6 +22,13 @@ const loginLimiter = rateLimit({
 const passwordChangeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => getClientIp(req)
+});
+const magicLinkLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => getClientIp(req)
@@ -92,6 +101,60 @@ router.post('/login', loginLimiter, async (req, res) => {
   res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role }, clientIp });
 });
 
+router.post('/magic-link/request', magicLinkLimiter, async (req, res, next) => {
+  try {
+    const email = String((req.body && req.body.email) || '').trim().toLowerCase();
+    const mailConfiguration = await mailer.getConfiguration();
+    const configuredBaseUrl = mailConfiguration.appBaseUrl;
+    if (!email || !/.+@.+\..+/.test(email)) {
+      return res.status(400).json({ error: 'Valid email required' });
+    }
+    if (process.env.NODE_ENV === 'production' && !mailer.isConfigured(mailConfiguration)) {
+      return res.status(503).json({ error: 'Magic link is not configured' });
+    }
+
+    const response = { message: 'Si ce compte existe, un lien de connexion vient d’être envoyé.' };
+    const user = await getByEmail(email);
+    if (!user) { return res.status(202).json(response); }
+
+    const token = await magicLinks.create(user.id);
+    const baseUrl = configuredBaseUrl || `${req.protocol}://${req.get('host')}`;
+    const magicLink = `${baseUrl}/login.html?magic_token=${encodeURIComponent(token)}`;
+
+    if (process.env.NODE_ENV !== 'production') { response.magicLink = magicLink; }
+    if (mailer.isConfigured(mailConfiguration) && process.env.NODE_ENV !== 'test') {
+      try {
+        await mailer.sendMagicLink({ to: user.email, name: user.name, url: magicLink }, mailConfiguration);
+      } catch (error) {
+        console.error('[magic-link] Envoi impossible:', error.message);
+      }
+    } else {
+      console.log(`[DEV] Magic link pour ${user.email}: ${magicLink}`);
+    }
+    return res.status(202).json(response);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post('/magic-link/verify', magicLinkLimiter, async (req, res, next) => {
+  try {
+    const token = String((req.body && req.body.token) || '');
+    const consumed = await magicLinks.consume(token);
+    if (!consumed) { return res.status(401).json({ error: 'Magic link invalid or expired' }); }
+
+    const user = await getById(consumed.userId);
+    if (!user) { return res.status(401).json({ error: 'Magic link invalid or expired' }); }
+    const authToken = signToken({ sub: user.id, role: user.role });
+    return res.json({
+      token: authToken,
+      user: { id: user.id, email: user.email, name: user.name, role: user.role }
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 // Admin creates users
 router.post('/register', requireAuth, async (req, res) => {
   if (req.user.role !== 'admin') {return res.status(403).json({ error: 'Forbidden' });}
@@ -123,7 +186,7 @@ router.patch('/me/password', requireAuth, passwordChangeLimiter, async (req, res
     const updated = await require('../services/users').update(req.user.id, { password: pwd });
     if (!updated) {return res.status(404).json({ error: 'User not found' });}
     return res.json({ ok: true });
-  } catch (_e) {
+  } catch {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 });

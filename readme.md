@@ -16,7 +16,7 @@ Application web simple pour gérer des demandes de cartes: soumission par formul
 - Appels de personnes: création, liste et suppression (authentifié)
 - Écran d'affichage public: cartes disponibles + appels en cours (`/display.html`)
 - Ajustement auto de l'affichage: la page se met à l’échelle pour afficher toutes les cartes
-- Authentification JWT et rôles:
+- Authentification par mot de passe, magic link ou passkey, avec session JWT et rôles:
   - `admin`: tout gérer (demandes, statuts, types, utilisateurs, appels)
   - `requester`: créer/voir ses demandes, créer/lister/supprimer des appels
   - `appel`: gérer les statuts et les appels, mais ne peut pas créer/voir la liste des demandes
@@ -49,6 +49,8 @@ Application web simple pour gérer des demandes de cartes: soumission par formul
 - Node.js 18+ et npm
 - Accès disque en écriture (répertoire `data/`)
  - Variables d'environnement (optionnelles): `JWT_SECRET`, `ADMIN_DEFAULT_EMAIL`, `ADMIN_DEFAULT_PASSWORD`
+ - Magic link en production: configurable depuis les paramètres administrateur ou avec `APP_BASE_URL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`
+ - Chiffrement des secrets enregistrés: `SETTINGS_ENCRYPTION_KEY` (recommandée) ou, à défaut, `JWT_SECRET`. Les variables d'environnement sont prioritaires sur les paramètres enregistrés.
 
 ## 🚀 Démarrage rapide
 
@@ -118,6 +120,8 @@ Le conteneur expose un healthcheck sur `/health`. Vous pouvez vérifier l'état 
 ## 🔌 API (extrait)
 
 - `POST /api/auth/login` → `{ email, password }` → `{ token, user }`
+- `POST /api/auth/magic-link/request` → `{ email }` → envoi d'un lien valable 15 minutes
+- `POST /api/auth/magic-link/verify` → `{ token }` → `{ token, user }` (lien à usage unique)
 - `GET /api/auth/me` → utilisateur courant
 - `POST /api/auth/register` (admin) → créer un utilisateur `{ name, email, role, password }`
 - `GET /api/users` (admin) → liste des utilisateurs
