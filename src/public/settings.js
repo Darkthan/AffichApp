@@ -392,6 +392,24 @@ async function onMagicLinkSettingsSubmit(event) {
   }
 }
 
+async function testSmtpConnection() {
+  const button = document.getElementById('magic-test-smtp-btn');
+  const msg = document.getElementById('magic-link-settings-msg');
+  button.disabled = true;
+  msg.textContent = 'Test de la connexion SMTP…';
+  msg.className = 'msg';
+  try {
+    const result = await fetchJSON('/api/settings/magic-link/test-smtp', { method: 'POST' });
+    msg.textContent = result.message;
+    msg.className = 'msg success';
+  } catch (error) {
+    msg.textContent = (error.data && error.data.message) || 'La connexion SMTP a échoué.';
+    msg.className = 'msg error';
+  } finally {
+    button.disabled = false;
+  }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   // Menu toggle
   const toggle = document.getElementById('menu-toggle');
@@ -439,6 +457,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const magicLinkSettingsForm = document.getElementById('magic-link-settings-form');
     if (magicLinkSettingsForm) {
       magicLinkSettingsForm.addEventListener('submit', onMagicLinkSettingsSubmit);
+      document.getElementById('magic-test-smtp-btn').addEventListener('click', testSmtpConnection);
       try { await loadMagicLinkSettings(); } catch {
         const magicMsg = document.getElementById('magic-link-settings-msg');
         magicMsg.textContent = 'Impossible de charger la configuration.';

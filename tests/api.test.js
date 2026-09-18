@@ -1,6 +1,7 @@
 const request = require('supertest');
 const fs = require('fs').promises;
 const path = require('path');
+const nodemailer = require('nodemailer');
 const { createApp } = require('../src/app');
 const { seedAdminIfEmpty } = require('../src/services/users');
 
@@ -176,6 +177,30 @@ describe('API smoke', () => {
       const stored = await fs.readFile(settingsFile, 'utf-8');
       expect(stored).not.toContain('very-secret-password');
       expect(JSON.parse(stored).magicLink.smtpPassEncrypted).toMatch(/^enc:v1:/);
+
+      const verify = jest.fn().mockResolvedValue(true);
+      const transportSpy = jest.spyOn(nodemailer, 'createTransport').mockReturnValue({ verify });
+      try {
+        const smtpTest = await request(app)
+          .post('/api/settings/magic-link/test-smtp')
+          .set('Authorization', 'Bearer ' + token)
+          .set('X-Requested-With', 'XMLHttpRequest');
+        expect(smtpTest.status).toBe(200);
+        expect(smtpTest.body.ok).toBe(true);
+        expect(verify).toHaveBeenCalledTimes(1);
+
+        const timeout = new Error('Connection timeout');
+        timeout.code = 'ETIMEDOUT';
+        verify.mockRejectedValueOnce(timeout);
+        const failedTest = await request(app)
+          .post('/api/settings/magic-link/test-smtp')
+          .set('Authorization', 'Bearer ' + token)
+          .set('X-Requested-With', 'XMLHttpRequest');
+        expect(failedTest.status).toBe(504);
+        expect(failedTest.body.reason).toBe('timeout');
+      } finally {
+        transportSpy.mockRestore();
+      }
 
       process.env.SMTP_HOST = 'smtp.from-environment.example';
       const effective = await request(app)

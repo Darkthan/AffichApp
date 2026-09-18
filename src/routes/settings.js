@@ -201,4 +201,36 @@ router.patch('/magic-link', requireAuth, requireRole('admin'), async (req, res) 
   }
 });
 
+function smtpErrorResponse(error) {
+  const code = String(error && error.code || '').toUpperCase();
+  const message = String(error && error.message || '').toLowerCase();
+  if (code === 'E_SMTP_NOT_CONFIGURED') {
+    return { status: 400, reason: 'not_configured', message: 'La configuration SMTP est incomplète.' };
+  }
+  if (code === 'EAUTH') {
+    return { status: 502, reason: 'authentication', message: 'Le serveur SMTP a refusé les identifiants.' };
+  }
+  if (code === 'ETIMEDOUT' || message.includes('timeout')) {
+    return { status: 504, reason: 'timeout', message: 'Le serveur SMTP ne répond pas dans le délai imparti. Vérifiez l’hôte, le port et le pare-feu.' };
+  }
+  if (['ECONNREFUSED', 'ECONNECTION', 'ESOCKET'].includes(code)) {
+    return { status: 502, reason: 'connection', message: 'Connexion SMTP refusée. Vérifiez l’hôte, le port et le réglage TLS.' };
+  }
+  if (code === 'ENOTFOUND' || code === 'EDNS') {
+    return { status: 502, reason: 'dns', message: 'Le nom du serveur SMTP est introuvable.' };
+  }
+  return { status: 502, reason: 'unknown', message: 'La connexion SMTP a échoué.' };
+}
+
+router.post('/magic-link/test-smtp', requireAuth, requireRole('admin'), async (_req, res) => {
+  try {
+    await mailer.testConnection();
+    res.json({ ok: true, message: 'Connexion et authentification SMTP réussies.' });
+  } catch (error) {
+    console.error('SMTP connection test failed:', error && error.code, error && error.message);
+    const result = smtpErrorResponse(error);
+    res.status(result.status).json({ error: 'SMTP connection failed', reason: result.reason, message: result.message });
+  }
+});
+
 module.exports = { router };

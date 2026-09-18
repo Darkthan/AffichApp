@@ -122,6 +122,7 @@ Le conteneur expose un healthcheck sur `/health`. Vous pouvez vérifier l'état 
 - `POST /api/auth/login` → `{ email, password }` → `{ token, user }`
 - `POST /api/auth/magic-link/request` → `{ email }` → envoi d'un lien valable 15 minutes
 - `POST /api/auth/magic-link/verify` → `{ token }` → `{ token, user }` (lien à usage unique)
+- `POST /api/settings/magic-link/test-smtp` (admin) → vérifie la connexion et l'authentification SMTP sans envoyer d'e-mail
 - `GET /api/auth/me` → utilisateur courant
 - `POST /api/auth/register` (admin) → créer un utilisateur `{ name, email, role, password }`
 - `GET /api/users` (admin) → liste des utilisateurs

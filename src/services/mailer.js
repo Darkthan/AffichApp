@@ -120,17 +120,36 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function createTransport(config) {
+  const timeout = Number.parseInt(process.env.SMTP_CONNECTION_TIMEOUT_MS || '10000', 10);
+  const transportConfig = {
+    host: config.smtpHost,
+    port: config.smtpPort,
+    secure: config.smtpSecure,
+    connectionTimeout: Number.isFinite(timeout) ? timeout : 10000,
+    greetingTimeout: Number.isFinite(timeout) ? timeout : 10000,
+    socketTimeout: Number.isFinite(timeout) ? timeout * 2 : 20000,
+  };
+  if (config.smtpUser) { transportConfig.auth = { user: config.smtpUser, pass: config.smtpPass }; }
+  return nodemailer.createTransport(transportConfig);
+}
+
+async function testConnection(config = null) {
+  const effective = config || await getConfiguration();
+  if (!isConfigured(effective)) {
+    const error = new Error('SMTP is not configured');
+    error.code = 'E_SMTP_NOT_CONFIGURED';
+    throw error;
+  }
+  const transporter = createTransport(effective);
+  await transporter.verify();
+  return true;
+}
+
 async function sendMagicLink({ to, name, url }, config = null) {
   const effective = config || await getConfiguration();
   if (!isConfigured(effective)) { throw new Error('SMTP is not configured'); }
-  const transportConfig = {
-    host: effective.smtpHost,
-    port: effective.smtpPort,
-    secure: effective.smtpSecure,
-  };
-  if (effective.smtpUser) { transportConfig.auth = { user: effective.smtpUser, pass: effective.smtpPass }; }
-
-  const transporter = nodemailer.createTransport(transportConfig);
+  const transporter = createTransport(effective);
   const safeName = escapeHtml(name || to);
   const safeUrl = escapeHtml(url);
   await transporter.sendMail({
@@ -146,6 +165,7 @@ module.exports = {
   getConfiguration,
   isConfigured,
   updateStoredConfiguration,
+  testConnection,
   sendMagicLink,
   encryptPassword,
   decryptPassword,
