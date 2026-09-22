@@ -165,10 +165,12 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     if (typeof payload.email === 'string' || payload.email === null) { updates.email = payload.email === null ? null : String(payload.email).trim(); }
     if (typeof payload.cardType === 'string') { updates.cardType = payload.cardType.trim(); }
     if (typeof payload.details === 'string' || payload.details === null) { updates.details = payload.details === null ? null : String(payload.details); }
+    if (typeof payload.creationError === 'string' || payload.creationError === null) { updates.creationError = payload.creationError === null ? null : String(payload.creationError); }
 
     // Remove empty strings for optional fields
     if (updates.email === '') { delete updates.email; }
     if (updates.details === '') { delete updates.details; }
+    if (updates.creationError === '') { updates.creationError = null; }
 
     const { valid, errors } = validateUpdateRequest(updates);
     if (!valid) {return res.status(400).json({ error: 'Validation failed', details: errors });}

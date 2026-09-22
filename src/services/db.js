@@ -52,6 +52,7 @@ async function create(payload, owner) {
     email: payload.email,
     cardType: payload.cardType,
     details: payload.details || null,
+    creationError: payload.creationError || null,
     status: 'demande',
     ownerId: owner && owner.id ? owner.id : null,
     createdAt: now,
@@ -81,6 +82,7 @@ async function updateFields(id, updates) {
   if (updates.email !== undefined) { it.email = updates.email; }
   if (updates.cardType !== undefined) { it.cardType = updates.cardType; }
   if (updates.details !== undefined) { it.details = updates.details; }
+  if (updates.creationError !== undefined) { it.creationError = updates.creationError; }
   it.updatedAt = new Date().toISOString();
   await writeAll(items);
   return it;

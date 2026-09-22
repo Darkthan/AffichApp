@@ -42,6 +42,17 @@ function el(tag, attrs = {}, ...children) {
   return e;
 }
 
+function applicantNameCell(it) {
+  const nameSpan = el('span', {}, it.applicantName);
+  if (!it.creationError) { return nameSpan; }
+  const warningIcon = el(
+    'span',
+    { class: 'danger-icon', title: it.creationError, 'aria-label': "Erreur de création: " + it.creationError },
+    '⚠️'
+  );
+  return el('span', { class: 'applicant-name-cell' }, nameSpan, warningIcon);
+}
+
 function renderList(items) {
   // Séparer les demandes en cours et les cartes disponibles
   const pendingItems = items.filter(it => it.status !== 'disponible');
@@ -120,7 +131,7 @@ function renderList(items) {
           'tr',
           {},
           el('td', {}, String(it.id)),
-          el('td', {}, it.applicantName),
+          el('td', {}, applicantNameCell(it)),
           el('td', { class: 'col-email' }, it.email && it.email.trim() ? it.email : '—'),
           el('td', { class: 'col-type' }, it.cardType),
           el('td', {}, statusLabel(it.status)),
@@ -203,7 +214,7 @@ function renderList(items) {
           'tr',
           {},
           el('td', {}, String(it.id)),
-          el('td', {}, it.applicantName),
+          el('td', {}, applicantNameCell(it)),
           el('td', { class: 'col-email' }, it.email && it.email.trim() ? it.email : '—'),
           el('td', { class: 'col-type' }, it.cardType),
           el('td', {}, el('div', { class: 'btn-group' }, actions.length ? actions : el('span', { class: 'muted' }, '—')))
@@ -635,6 +646,7 @@ function openEditDialog(item) {
   typeSelect.appendChild(el('option', { value: '' }, '-- Choisir --'));
   (cardTypesCache || []).forEach((t) => typeSelect.appendChild(el('option', { value: t.code, selected: item.cardType === t.code ? 'selected' : undefined }, t.label)));
   const detailsInput = el('textarea', { rows: '3' }, item.details || '');
+  const creationErrorInput = el('textarea', { rows: '3' }, item.creationError || '');
   const footer = el('div', { class: 'modal-footer' },
     el('button', { type: 'button', class: 'btn secondary', onclick: () => { document.body.removeChild(backdrop); } }, 'Annuler'),
     el('button', { type: 'submit', class: 'btn' }, 'Enregistrer')
@@ -644,6 +656,7 @@ function openEditDialog(item) {
     el('label', {}, 'Email', emailInput),
     el('label', {}, 'Type de carte', typeSelect),
     el('label', {}, 'Détails', detailsInput),
+    el('label', {}, "Erreur de création", creationErrorInput),
     footer
   );
   const msg = el('p', { class: 'msg', id: 'edit-msg' });
@@ -659,11 +672,13 @@ function openEditDialog(item) {
       email: emailInput.value.trim(),
       cardType: typeSelect.value,
       details: detailsInput.value,
+      creationError: creationErrorInput.value,
     };
     if (!payload.applicantName) { msg.textContent = 'Nom requis.'; msg.className = 'msg error'; return; }
     if (!payload.cardType) { msg.textContent = 'Type de carte requis.'; msg.className = 'msg error'; return; }
     if (payload.email === '') { delete payload.email; }
     if (payload.details !== undefined && payload.details.trim() === '') { payload.details = null; }
+    if (payload.creationError !== undefined) { payload.creationError = payload.creationError.trim() === '' ? null : payload.creationError.trim(); }
     try {
       await updateRequest(item.id, payload);
       msg.textContent = 'Enregistré ✔'; msg.className = 'msg success';

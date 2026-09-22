@@ -82,6 +82,10 @@ th { color: var(--muted); font-weight: 600; }
 .icon-btn:hover { color: var(--primary); background: transparent; }
 .icon-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 
+/* Danger warning icon next to applicant name */
+.applicant-name-cell { display: inline-flex; align-items: center; gap: 6px; }
+.danger-icon { cursor: help; font-size: 14px; line-height: 1; }
+
 /* Suggestions dropdown */
 .suggest-wrapper { position: relative; }
 .suggest-box { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 24px rgba(0,0,0,0.30); z-index: 150; max-height: 240px; overflow: auto; }

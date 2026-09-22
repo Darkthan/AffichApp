@@ -47,6 +47,9 @@ function validateUpdateRequest(payload) {
   if (payload.details !== undefined && payload.details !== null && typeof payload.details !== 'string') {
     errors.push('details doit être une chaîne si présent');
   }
+  if (payload.creationError !== undefined && payload.creationError !== null && typeof payload.creationError !== 'string') {
+    errors.push('creationError doit être une chaîne si présent');
+  }
   return { valid: errors.length === 0, errors };
 }
 
