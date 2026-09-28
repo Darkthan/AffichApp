@@ -54,6 +54,16 @@ Application web simple pour gérer des demandes de cartes: soumission par formul
 
 ## 🚀 Démarrage rapide
 
+### Connexion MCP
+
+Dans un client MCP prenant en charge OAuth, renseigner uniquement l’URL publique `https://votre-domaine/mcp`. Le client découvre automatiquement les paramètres OAuth, puis ouvre une page de connexion : l’utilisateur saisit l’email et le mot de passe de son compte et autorise l’accès. Aucune clé API ni configuration OAuth côté utilisateur n’est nécessaire.
+
+Le serveur utilise HTTP Streamable, OAuth avec code d’autorisation et PKCE, et l’enregistrement dynamique des clients. Il propose les outils `list_card_types`, `list_requests`, `get_request`, `create_request` et `update_request_status`. Les demandes visibles et les actions autorisées suivent le rôle du compte connecté.
+
+Lorsqu’un nom demandé via MCP est absent des noms connus, `create_request` demande de confirmer son orthographe et sa catégorie (élève, professeur ou personnel) avant de créer la demande.
+
+En production, servir l’application en HTTPS et définir `APP_BASE_URL` avec son origine publique (par exemple `https://cartes.example.org`), ainsi que `JWT_SECRET`. Le fichier `data/oauth.json` conserve les clients et les jetons OAuth ; le dossier `data/` doit rester persistant et privé.
+
 1) Installer les dépendances
 
 ```bash

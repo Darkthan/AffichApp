@@ -3,6 +3,7 @@ node_modules/
 data/*.json
 data/.jwt-secret
 data/.settings-encryption-key
+data/oauth.json
 dist/
 coverage/
 *.log

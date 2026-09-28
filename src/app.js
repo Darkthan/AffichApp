@@ -13,6 +13,8 @@ const { router: callsRouter } = require('./routes/calls');
 const { router: notificationsRouter } = require('./routes/notifications');
 const { router: fail2banRouter } = require('./routes/fail2ban');
 const { router: passkeysRouter } = require('./routes/passkeys');
+const { router: oauthRouter } = require('./routes/oauth');
+const { router: mcpRouter } = require('./routes/mcp');
 
 function createApp() {
   const app = express();
@@ -29,6 +31,9 @@ function createApp() {
 
   const publicDir = path.join(__dirname, 'public');
   app.use(express.static(publicDir));
+
+  app.use(oauthRouter);
+  app.use('/mcp', mcpRouter);
 
   // Protection CSRF pour toutes les routes API (sauf routes publiques en lecture seule)
   app.use('/api', csrfProtection);
