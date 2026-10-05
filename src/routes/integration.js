@@ -61,6 +61,10 @@ router.get('/card-types', scopeRequired('cards:read'), async (req, res, next) =>
   catch (error) { return next(error); }
 });
 
+router.get('/capabilities', scopeRequired('names:write'), (req, res) => {
+  return res.json({ importMissingNames: true });
+});
+
 router.patch('/cards/:id/status', scopeRequired('cards:write'), async (req, res, next) => {
   try {
     if (!['admin', 'appel'].includes(req.user.role)) { return res.status(403).json({ error: 'Forbidden' }); }
@@ -78,15 +82,19 @@ router.patch('/cards/:id/status', scopeRequired('cards:write'), async (req, res,
 router.post('/names', scopeRequired('names:write'), async (req, res, next) => {
   try {
     if (!['admin', 'appel'].includes(req.user.role)) { return res.status(403).json({ error: 'Forbidden' }); }
-    const { name, cardType } = req.body || {};
+    const { name, cardType, onlyIfMissing, alternateName } = req.body || {};
+    if ((onlyIfMissing !== undefined && typeof onlyIfMissing !== 'boolean') ||
+        (alternateName !== undefined && (typeof alternateName !== 'string' || !alternateName.trim() || alternateName.length > 200 || [...alternateName].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)))) {
+      return res.status(400).json({ error: 'Invalid import options' });
+    }
     if (typeof name !== 'string' || !name.trim() || name.trim().length > 200 || [...name].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) {
       return res.status(400).json({ error: 'name must contain 1 to 200 characters without control characters' });
     }
     if (cardType !== undefined && (typeof cardType !== 'string' || !await findByCode(cardType))) {
       return res.status(400).json({ error: 'Unknown cardType' });
     }
-    const saved = await suggestions.addOrUpdate(name.trim(), cardType);
-    return res.status(200).json({ name: saved.name, cardType: saved.cardType });
+    const saved = onlyIfMissing ? await suggestions.addIfMissing(name.trim(), cardType, alternateName) : await suggestions.addOrUpdate(name.trim(), cardType);
+    return res.status(200).json({ name: saved.name, cardType: saved.cardType, ...(onlyIfMissing ? { added: saved.added } : {}) });
   } catch (error) { return next(error); }
 });
 

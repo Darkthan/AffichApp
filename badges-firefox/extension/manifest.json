@@ -1,0 +1,53 @@
+{
+  "manifest_version": 2,
+  "name": "Badges — sélection par liste",
+  "version": "1.2.1",
+  "description": "Sélection de badges IDCapt depuis AffichApp (OAuth), une liste TXT/CSV ou un collage, avec vérification des correspondances.",
+  "permissions": [
+    "activeTab",
+    "identity",
+    "storage"
+  ],
+  "browser_action": {
+    "default_title": "Sélectionner des badges depuis une liste",
+    "default_icon": {
+      "16": "icons/badge-16.png",
+      "32": "icons/badge-32.png",
+      "48": "icons/badge-48.png"
+    }
+  },
+  "background": {
+    "scripts": [
+      "names.js",
+      "affichapp.js",
+      "background.js"
+    ]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "selection-badges@local.invalid",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "authenticationInfo",
+          "personallyIdentifyingInfo"
+        ]
+      }
+    }
+  },
+  "optional_permissions": [
+    "https://*/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "http://[::1]/*"
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "48": "icons/badge-48.png",
+    "96": "icons/badge-96.png",
+    "128": "icons/badge-128.png"
+  }
+}

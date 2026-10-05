@@ -114,4 +114,21 @@ describe('Firefox integration OAuth API', () => {
     expect((await request(app).get('/api/integration/cards').auth(readOnly.access_token, { type: 'bearer' })).status).toBe(401);
     expect((await request(app).get('/api/integration/cards').auth(refreshed.body.access_token, { type: 'bearer' })).status).toBe(200);
   });
+
+  it('adds only missing autocomplete names and never rewrites existing categories', async () => {
+    const token = await login(admin);
+    const capability = await request(app).get('/api/integration/capabilities').auth(token.access_token, { type: 'bearer' });
+    expect(capability.body.importMissingNames).toBe(true);
+    await suggestions.addOrUpdate('Test Enseignant', 'enseignants');
+    const importName = body => request(app).post('/api/integration/names').auth(token.access_token, { type: 'bearer' }).send({ ...body, onlyIfMissing: true });
+    const existing = await importName({ name: 'Enseignant Test', alternateName: 'Test Enseignant', cardType: 'personnels' });
+    expect(existing.body.added).toBe(false);
+    expect(existing.body.cardType).toBe('enseignants');
+    expect((await suggestions.getAll()).find(item => item.name === 'Test Enseignant').count).toBe(1);
+    const concurrent = await Promise.all([importName({ name: 'Nouvel Élève', cardType: 'etudiants' }), importName({ name: 'Nouvel Eleve', cardType: 'etudiants' })]);
+    expect(concurrent.filter(response => response.body.added)).toHaveLength(1);
+    expect((await suggestions.getAll()).filter(item => item.key === 'nouvel eleve')).toHaveLength(1);
+    const invalid = await request(app).post('/api/integration/names').auth(token.access_token, { type: 'bearer' }).send({ name: 'Test', onlyIfMissing: 'true' });
+    expect(invalid.status).toBe(400);
+  });
 });

@@ -70,4 +70,17 @@ function addOrUpdate(name, cardType) {
   return mutate(() => addOrUpdateRecord(name, cardType));
 }
 
-module.exports = { addOrUpdate, getAll, clearAll };
+function addIfMissing(name, cardType, alternateName) {
+  return mutate(async () => {
+    const items = await readAll();
+    const keys = new Set([normName(name), normName(alternateName)].filter(Boolean));
+    const existing = items.find(item => keys.has(normName(item.name)));
+    if (existing) { return { ...existing, added: false }; }
+    const record = { key: normName(name), name: name.trim(), cardType: cardType || null, count: 1, updatedAt: new Date().toISOString() };
+    items.push(record);
+    await writeAll(items);
+    return { ...record, added: true };
+  });
+}
+
+module.exports = { addOrUpdate, addIfMissing, getAll, clearAll };

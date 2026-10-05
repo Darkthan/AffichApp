@@ -105,6 +105,8 @@ Content-Type: application/json
 
 `cardType` est facultatif et doit désigner un type existant. Le nom est limité à 200 caractères, sans caractères de contrôle. Le nom est immédiatement disponible dans la présaisie du formulaire existant. Cela ne crée pas de demande de carte. Les doublons sont regroupés sans tenir compte des accents, de la casse ou des espaces répétés. Le scope `names:write` et un compte `admin` ou `appel` sont requis.
 
+Pour l’enrichissement automatique IDCapt, envoyer également `onlyIfMissing: true` et, si disponible, `alternateName` contenant l’ordre prénom puis nom. Un nom déjà présent (dans l’un des deux ordres) conserve sa catégorie et son compteur. La réponse indique `added: true` ou `added: false`. La vérification et l’ajout sont sérialisés pour éviter les doublons entre imports concurrents. `GET /api/integration/capabilities` avec le scope `names:write` renvoie `importMissingNames: true` ; l’extension vérifie ce support avant toute écriture automatique.
+
 ## Erreurs
 
 | Code HTTP | Signification |
