@@ -73,6 +73,7 @@ describe('MCP OAuth', () => {
       .send({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
     expect(tools.status).toBe(200);
     expect(tools.body.result.tools.map((tool) => tool.name)).toContain('list_requests');
+    expect(tools.body.result.tools.map((tool) => tool.name)).toContain('update_applicant_name');
     const listed = await request(app).post('/mcp').set('Authorization', `Bearer ${token.body.access_token}`)
       .set('Accept', 'application/json, text/event-stream')
       .send({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'list_requests', arguments: {} } });
@@ -91,6 +92,31 @@ describe('MCP OAuth', () => {
       .send({ jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'create_request', arguments: { ...createInput, confirmUnknownName: true, personCategory: 'eleve' } } });
     const newRequest = JSON.parse(created.body.result.content[0].text);
     expect(newRequest.applicantName).toBe(applicantName);
+    const callNameUpdate = async (rpcId, fields) => request(app).post('/mcp')
+      .set('Authorization', `Bearer ${token.body.access_token}`)
+      .set('Accept', 'application/json, text/event-stream')
+      .send({ jsonrpc: '2.0', id: rpcId, method: 'tools/call', params: { name: 'update_applicant_name', arguments: { id: newRequest.id, ...fields } } });
+    const correctedName = `Nom corrigé ${Date.now()}`;
+    const confirmation = await callNameUpdate(7, { applicantName: correctedName });
+    expect(JSON.parse(confirmation.body.result.content[0].text).needsConfirmation).toBe(true);
+    expect((await db.getById(newRequest.id)).applicantName).toBe(applicantName);
+    const wrongCategory = await callNameUpdate(8, { applicantName: correctedName, confirmUnknownName: true, personCategory: 'professeur' });
+    expect(wrongCategory.body.result.isError).toBe(true);
+    const corrected = await callNameUpdate(9, { applicantName: correctedName, confirmUnknownName: true, personCategory: 'eleve' });
+    const updatedRequest = JSON.parse(corrected.body.result.content[0].text);
+    expect(updatedRequest.applicantName).toBe(correctedName);
+    expect(updatedRequest.cardType).toBe(newRequest.cardType);
+    expect(updatedRequest.status).toBe(newRequest.status);
+    expect(updatedRequest.ownerId).toBe(newRequest.ownerId);
+    const invalid = await callNameUpdate(10, { applicantName: '  ' });
+    expect(invalid.body.result.isError).toBe(true);
+    const otherRequest = await db.create({ applicantName: 'Autre propriétaire', cardType: 'etudiants' }, { id: user.id + 1000 });
+    const denied = await request(app).post('/mcp').set('Authorization', `Bearer ${token.body.access_token}`)
+      .set('Accept', 'application/json, text/event-stream')
+      .send({ jsonrpc: '2.0', id: 11, method: 'tools/call', params: { name: 'update_applicant_name', arguments: { id: otherRequest.id, applicantName: correctedName } } });
+    expect(denied.body.result.isError).toBe(true);
+    expect((await db.getById(otherRequest.id)).applicantName).toBe('Autre propriétaire');
+    await db.remove(otherRequest.id);
     await db.remove(newRequest.id);
 
     const renewed = await request(app).post('/token').type('form').send({

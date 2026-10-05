@@ -6,7 +6,7 @@ const oauth = require('../services/oauth');
 const { getById } = require('../services/users');
 const { db } = require('../services/db');
 const { getAll: getCardTypes, findByCode } = require('../services/cardTypes');
-const { validateNewRequest, validateStatus } = require('../services/validator');
+const { validateNewRequest, validateUpdateRequest, validateStatus } = require('../services/validator');
 const suggestions = require('../services/suggestions');
 const { origin } = require('./oauth');
 
@@ -56,6 +56,33 @@ function serverFor(user) {
       return failure(`Le type de carte ne correspond pas à la catégorie confirmée. Utiliser « ${categoryType[personCategory]} » ou corriger la catégorie.`);
     }
     return result(await db.create(payload, user));
+  });
+
+  server.registerTool('update_applicant_name', { description: 'Corrige uniquement le nom d’une demande (propriétaire ou admin). Si le nouveau nom est absent de la base, demander à l’utilisateur de confirmer son orthographe et de préciser élève, professeur ou personnel avant de rappeler cet outil.', inputSchema: {
+    id: z.number().int().positive(), applicantName: z.string(),
+    confirmUnknownName: z.boolean().optional().describe('Vrai seulement après confirmation explicite de l’orthographe par l’utilisateur'),
+    personCategory: z.enum(['eleve', 'professeur', 'personnel']).optional().describe('Catégorie donnée par l’utilisateur si le nom est inconnu')
+  } }, async ({ id, applicantName, confirmUnknownName, personCategory }) => {
+    if (user.role === 'appel') { return failure('Votre rôle ne permet pas de modifier une demande.'); }
+    const item = await db.getById(id);
+    if (!item || (user.role !== 'admin' && item.ownerId !== user.id)) { return failure('Demande introuvable ou accès refusé.'); }
+    const name = applicantName.trim();
+    const checked = validateUpdateRequest({ applicantName: name });
+    if (!checked.valid) { return failure(`Données invalides : ${checked.errors.join(', ')}`); }
+    if (name === item.applicantName) { return result(item); }
+    const normalized = normalizeName(name);
+    const knownNames = await suggestions.getAll();
+    const existingRequests = await db.getAll();
+    const known = knownNames.some((entry) => normalizeName(entry.name) === normalized) ||
+      existingRequests.some((entry) => normalizeName(entry.applicantName) === normalized);
+    if (!known && (!confirmUnknownName || !personCategory)) {
+      return result({ needsConfirmation: true, message: `Le nom « ${name} » est absent de la base. Son orthographe est-elle correcte ? La personne est-elle élève, professeur ou membre du personnel ?`, required: ['confirmUnknownName', 'personCategory'] });
+    }
+    const categoryType = { eleve: 'etudiants', professeur: 'enseignants', personnel: 'personnels' };
+    if (!known && item.cardType !== categoryType[personCategory]) {
+      return failure(`Le type de carte de cette demande ne correspond pas à la catégorie confirmée (${personCategory}).`);
+    }
+    return result(await db.updateFields(id, { applicantName: name }));
   });
 
   server.registerTool('update_request_status', { description: 'Change le statut d’une demande (admin ou appel)', inputSchema: {
