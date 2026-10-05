@@ -7,6 +7,8 @@ let authToken = getStoredToken();
 let cardTypesCache = [];
 let suggestionsCache = [];
 let esRequests = null;
+const selectedAvailableCards = new Set();
+let deletingAvailableCards = false;
 
 async function fetchJSON(url, options = {}) {
   const base = options || {};
@@ -57,6 +59,12 @@ function renderList(items) {
   // Séparer les demandes en cours et les cartes disponibles
   const pendingItems = items.filter(it => it.status !== 'disponible');
   const availableItems = items.filter(it => it.status === 'disponible');
+  const deletableAvailableItems = availableItems.filter(it => window.currentUser &&
+    (window.currentUser.role === 'admin' || window.currentUser.id === it.ownerId));
+  const deletableIds = new Set(deletableAvailableItems.map(it => it.id));
+  for (const id of selectedAvailableCards) {
+    if (!deletableIds.has(id)) { selectedAvailableCards.delete(id); }
+  }
 
   // Afficher les demandes en cours
   const container = document.getElementById('list');
@@ -149,6 +157,51 @@ function renderList(items) {
   if (!availableItems.length) {
     availableContainer.appendChild(el('p', { class: 'muted' }, 'Aucune carte disponible pour le moment.'));
   } else {
+    const selectionInputs = [];
+    const selectAll = el('input', { type: 'checkbox', 'aria-label': 'Sélectionner toutes les cartes disponibles' });
+    const deleteSelected = el('button', { type: 'button', class: 'btn small danger', onclick: async () => {
+      const ids = [...selectedAvailableCards];
+      if (deletingAvailableCards || !ids.length || !confirm(`Supprimer les ${ids.length} carte(s) sélectionnée(s) ?`)) { return; }
+      deletingAvailableCards = true;
+      updateSelection();
+      let failures = 0;
+      try {
+        for (const id of ids) {
+          try {
+            await deleteRequest(id);
+            selectedAvailableCards.delete(id);
+          } catch { failures++; }
+        }
+      } finally {
+        deletingAvailableCards = false;
+        updateSelection();
+        await loadList();
+      }
+      if (failures) { alert(`${failures} carte(s) n'ont pas pu être supprimée(s). Les cartes restantes sont toujours sélectionnées.`); }
+    } }, 'Supprimer la sélection');
+    function updateSelection() {
+      const count = selectedAvailableCards.size;
+      deleteSelected.textContent = deletingAvailableCards ? 'Suppression en cours…' : `Supprimer la sélection (${count})`;
+      deleteSelected.disabled = deletingAvailableCards || count === 0;
+      selectAll.checked = deletableAvailableItems.length > 0 && count === deletableAvailableItems.length;
+      selectAll.indeterminate = count > 0 && count < deletableAvailableItems.length;
+      selectAll.disabled = deletingAvailableCards;
+      selectionInputs.forEach(({ input, id }) => {
+        input.checked = selectedAvailableCards.has(id);
+        input.disabled = deletingAvailableCards;
+      });
+    }
+    selectAll.addEventListener('change', () => {
+      deletableAvailableItems.forEach(it => {
+        if (selectAll.checked) { selectedAvailableCards.add(it.id); }
+        else { selectedAvailableCards.delete(it.id); }
+      });
+      updateSelection();
+    });
+    if (deletableAvailableItems.length) {
+      availableContainer.appendChild(el('div', { class: 'available-selection' },
+        el('label', {}, selectAll, ' Tout sélectionner'), deleteSelected));
+    }
     const table = el('table', { class: 'table' });
     table.appendChild(
       el(
@@ -157,6 +210,7 @@ function renderList(items) {
         el(
           'tr',
           {},
+          deletableAvailableItems.length ? el('th', {}, 'Sélection') : null,
           el('th', {}, 'ID'),
           el('th', {}, 'Demandeur'),
           el('th', { class: 'col-email' }, 'Email'),
@@ -173,6 +227,19 @@ function renderList(items) {
       const canEdit = isAdmin || isOwner;
       const actions = [];
       // Prepare edit icon button
+      let selectionCell = null;
+      if (deletableAvailableItems.length) {
+        selectionCell = el('td');
+        if (canDelete) {
+          const input = el('input', { type: 'checkbox', 'aria-label': `Sélectionner la carte ${it.id} de ${it.applicantName}`, onchange: () => {
+            if (input.checked) { selectedAvailableCards.add(it.id); }
+            else { selectedAvailableCards.delete(it.id); }
+            updateSelection();
+          } });
+          selectionInputs.push({ input, id: it.id });
+          selectionCell.appendChild(input);
+        }
+      }
       const iconEmoji = el('span', { class: 'icon-emoji', 'aria-hidden': 'true' }, '✏️');
       const editAttrs = { class: 'icon-btn', title: canEdit ? 'Modifier' : 'Modification non autorisée', 'aria-label': 'Modifier' };
       if (canEdit) { editAttrs.onclick = () => openEditDialog(it); } else { editAttrs.disabled = 'disabled'; }
@@ -213,6 +280,7 @@ function renderList(items) {
         el(
           'tr',
           {},
+          selectionCell,
           el('td', {}, String(it.id)),
           el('td', {}, applicantNameCell(it)),
           el('td', { class: 'col-email' }, it.email && it.email.trim() ? it.email : '—'),
@@ -223,6 +291,7 @@ function renderList(items) {
     });
     table.appendChild(tbody);
     availableContainer.appendChild(table);
+    updateSelection();
   }
 }
 

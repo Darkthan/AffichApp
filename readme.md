@@ -56,6 +56,8 @@ Application web simple pour gérer des demandes de cartes: soumission par formul
 
 ### Connexion MCP
 
+Pour une intégration Firefox de gestion des cartes, l’API OAuth `/api/integration` permet de récupérer les noms des cartes à faire, changer leurs statuts et ajouter des noms à la présaisie. Voir le [guide de connexion et les exemples](docs/firefox-api.md).
+
 Dans un client MCP prenant en charge OAuth, renseigner uniquement l’URL publique `https://votre-domaine/mcp`. Le client découvre automatiquement les paramètres OAuth, puis ouvre une page de connexion : l’utilisateur saisit l’email et le mot de passe de son compte et autorise l’accès. Aucune clé API ni configuration OAuth côté utilisateur n’est nécessaire.
 
 Le serveur utilise HTTP Streamable, OAuth avec code d’autorisation et PKCE, et l’enregistrement dynamique des clients. Il propose les outils `list_card_types`, `list_requests`, `get_request`, `create_request` et `update_request_status`. Les demandes visibles et les actions autorisées suivent le rôle du compte connecté.

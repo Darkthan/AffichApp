@@ -3,6 +3,7 @@ const fs = require('fs');
 const express = require('express');
 const helmet = require('helmet');
 const { csrfProtection } = require('./middleware/csrf');
+const { apiKeyPreAuth } = require('./middleware/apiKeyPreAuth');
 const { router: requestsRouter } = require('./routes/requests');
 const { router: authRouter } = require('./routes/auth');
 const { router: usersRouter } = require('./routes/users');
@@ -13,8 +14,11 @@ const { router: callsRouter } = require('./routes/calls');
 const { router: notificationsRouter } = require('./routes/notifications');
 const { router: fail2banRouter } = require('./routes/fail2ban');
 const { router: passkeysRouter } = require('./routes/passkeys');
+const { router: apiKeysRouter } = require('./routes/apiKeys');
+const { router: swaggerRouter } = require('./swagger');
 const { router: oauthRouter } = require('./routes/oauth');
 const { router: mcpRouter } = require('./routes/mcp');
+const { router: integrationRouter } = require('./routes/integration');
 
 function createApp() {
   const app = express();
@@ -34,7 +38,10 @@ function createApp() {
 
   app.use(oauthRouter);
   app.use('/mcp', mcpRouter);
+  app.use('/api/integration', integrationRouter);
 
+  // Pre-validate API keys before CSRF so the bypass is gated on a proven valid key
+  app.use('/api', apiKeyPreAuth);
   // Protection CSRF pour toutes les routes API (sauf routes publiques en lecture seule)
   app.use('/api', csrfProtection);
 
@@ -47,6 +54,8 @@ function createApp() {
   app.use('/api/notifications', notificationsRouter);
   app.use('/api/fail2ban', fail2banRouter);
   app.use('/api/passkeys', passkeysRouter);
+  app.use('/api/admin/api-keys', apiKeysRouter);
+  app.use('/api/docs', swaggerRouter);
   app.use('/public', publicRouter);
 
   app.get('/health', (req, res) => {

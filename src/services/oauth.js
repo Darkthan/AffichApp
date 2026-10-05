@@ -42,9 +42,9 @@ async function getClient(id) {
   return (await read()).clients.find((entry) => entry.client_id === id) || null;
 }
 
-async function createCode(clientId, redirectUri, challenge, userId) {
+async function createCode(clientId, redirectUri, challenge, userId, scope = 'mcp') {
   const code = random();
-  await mutate((data) => data.codes.push({ hash: digest(code), clientId, redirectUri, challenge, userId, expires: Date.now() + 5 * 60 * 1000 }));
+  await mutate((data) => data.codes.push({ hash: digest(code), clientId, redirectUri, challenge, userId, scope, expires: Date.now() + 5 * 60 * 1000 }));
   return code;
 }
 
@@ -58,8 +58,8 @@ async function exchangeCode(code, clientId, redirectUri, verifier) {
     if (calculated.length !== entry.challenge.length || !crypto.timingSafeEqual(Buffer.from(calculated), Buffer.from(entry.challenge))) { return null; }
     const access = random();
     const refresh = random();
-    data.tokens.push({ accessHash: digest(access), refreshHash: digest(refresh), clientId, userId: entry.userId, expires: Date.now() + 30 * 24 * 60 * 60 * 1000, accessExpires: Date.now() + 60 * 60 * 1000 });
-    return { access_token: access, refresh_token: refresh, token_type: 'Bearer', expires_in: 3600, scope: 'mcp' };
+    data.tokens.push({ accessHash: digest(access), refreshHash: digest(refresh), clientId, userId: entry.userId, scope: entry.scope || 'mcp', expires: Date.now() + 30 * 24 * 60 * 60 * 1000, accessExpires: Date.now() + 60 * 60 * 1000 });
+    return { access_token: access, refresh_token: refresh, token_type: 'Bearer', expires_in: 3600, scope: entry.scope || 'mcp' };
   });
 }
 
@@ -73,14 +73,19 @@ async function refreshToken(token, clientId) {
     entry.refreshHash = digest(refresh);
     entry.expires = Date.now() + 30 * 24 * 60 * 60 * 1000;
     entry.accessExpires = Date.now() + 60 * 60 * 1000;
-    return { access_token: access, refresh_token: refresh, token_type: 'Bearer', expires_in: 3600, scope: 'mcp' };
+    return { access_token: access, refresh_token: refresh, token_type: 'Bearer', expires_in: 3600, scope: entry.scope || 'mcp' };
   });
 }
 
-async function verifyAccess(token) {
+async function verifyAccessGrant(token) {
   await queue;
   const entry = (await read()).tokens.find((item) => item.accessHash === digest(token) && item.accessExpires > Date.now());
-  return entry ? entry.userId : null;
+  return entry ? { userId: entry.userId, scope: entry.scope || 'mcp' } : null;
 }
 
-module.exports = { registerClient, getClient, createCode, exchangeCode, refreshToken, verifyAccess };
+async function verifyAccess(token) {
+  const grant = await verifyAccessGrant(token);
+  return grant && grant.scope.split(' ').includes('mcp') ? grant.userId : null;
+}
+
+module.exports = { registerClient, getClient, createCode, exchangeCode, refreshToken, verifyAccess, verifyAccessGrant };

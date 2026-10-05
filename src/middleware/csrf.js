@@ -9,6 +9,13 @@ function csrfProtection(req, res, next) {
     return next();
   }
 
+  // Only bypass CSRF when the API key has already been validated by apiKeyPreAuth middleware.
+  // Checking req.isApiKeyAuth (set by the pre-auth middleware) ensures CSRF is bypassed
+  // only for requests with a PROVEN valid key, not any request that sets the header.
+  if (req.isApiKeyAuth) {
+    return next();
+  }
+
   // Vérifier la présence du header X-Requested-With
   const xRequestedWith = req.get('X-Requested-With');
 

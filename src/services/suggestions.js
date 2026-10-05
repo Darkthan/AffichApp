@@ -3,6 +3,13 @@ const path = require('path');
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const FILE = path.join(DATA_DIR, 'suggestions.json');
+let mutationQueue = Promise.resolve();
+
+function mutate(operation) {
+  const result = mutationQueue.then(operation);
+  mutationQueue = result.catch(() => {});
+  return result;
+}
 
 async function ensureStore() {
   await fs.mkdir(DATA_DIR, { recursive: true });
@@ -29,7 +36,7 @@ async function writeAll(items) {
   await fs.writeFile(FILE, JSON.stringify(items, null, 2), 'utf-8');
 }
 
-async function addOrUpdate(name, cardType) {
+async function addOrUpdateRecord(name, cardType) {
   const items = await readAll();
   const key = normName(name);
   if (!key) { return null; }
@@ -45,17 +52,22 @@ async function addOrUpdate(name, cardType) {
     items[idx].updatedAt = now;
   }
   await writeAll(items);
-  return true;
+  return items.find(item => item.key === key);
 }
 
 async function getAll() {
+  await mutationQueue;
   const items = await readAll();
   // sort by count desc then updatedAt desc
   return items.sort((a, b) => (b.count || 0) - (a.count || 0) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
 }
 
 async function clearAll() {
-  await writeAll([]);
+  await mutate(() => writeAll([]));
+}
+
+function addOrUpdate(name, cardType) {
+  return mutate(() => addOrUpdateRecord(name, cardType));
 }
 
 module.exports = { addOrUpdate, getAll, clearAll };
