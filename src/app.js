@@ -18,6 +18,7 @@ const { router: apiKeysRouter } = require('./routes/apiKeys');
 const { router: swaggerRouter } = require('./swagger');
 const { router: oauthRouter } = require('./routes/oauth');
 const { router: mcpRouter } = require('./routes/mcp');
+const { router: personalTokensRouter } = require('./routes/personalTokens');
 const { router: integrationRouter } = require('./routes/integration');
 
 function createApp() {
@@ -47,6 +48,7 @@ function createApp() {
 
   app.use('/api/requests', requestsRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/personal-tokens', personalTokensRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/card-types', cardTypesRouter);
   app.use('/api/settings', settingsRouter);

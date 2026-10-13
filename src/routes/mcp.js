@@ -3,6 +3,7 @@ const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
 const { z } = require('zod');
 const oauth = require('../services/oauth');
+const personalTokens = require('../services/personalTokens');
 const { getById } = require('../services/users');
 const { db } = require('../services/db');
 const { getAll: getCardTypes, findByCode } = require('../services/cardTypes');
@@ -99,9 +100,23 @@ function serverFor(user) {
 
 router.all('/', async (req, res, next) => {
   try {
+    res.set('Cache-Control', 'no-store');
+    if (process.env.NODE_ENV === 'production' && !req.secure) {
+      return res.status(403).json({ error: 'HTTPS required' });
+    }
+    const requestOrigin = req.get('Origin');
+    if (requestOrigin && requestOrigin !== origin(req)) {
+      return res.status(403).json({ error: 'Invalid origin' });
+    }
     const bearer = /^Bearer (\S+)$/i.exec(req.get('Authorization') || '');
-    const userId = bearer && await oauth.verifyAccess(bearer[1]);
-    const user = userId && await getById(userId);
+    let user = null;
+    if (bearer) {
+      if (bearer[1].startsWith('affichapp_pat_')) { user = await personalTokens.verify(bearer[1]); }
+      else {
+        const userId = await oauth.verifyAccess(bearer[1]);
+        user = userId && await getById(userId);
+      }
+    }
     if (!user) {
       res.set('WWW-Authenticate', `Bearer resource_metadata="${origin(req)}/.well-known/oauth-protected-resource/mcp", scope="mcp"`);
       return res.status(401).json({ error: 'unauthorized' });

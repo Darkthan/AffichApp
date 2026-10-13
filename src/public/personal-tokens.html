@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jetons personnels — AffichApp</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/personal-tokens.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar"><a href="/">← AffichApp</a></header>
+    <main class="container">
+      <h1>Jetons personnels MCP</h1>
+      <section class="card">
+        <p>Pour connecter votre application iPhone, utilisez l’URL MCP ci-dessous et un jeton personnel comme authentification Bearer. Chaque jeton donne accès aux outils MCP dans la limite des droits actuels de votre compte.</p>
+        <label>URL du serveur MCP<input id="mcp-url" readonly /></label>
+        <p>ChatGPT peut continuer à se connecter avec OAuth.</p>
+        <form id="token-form">
+          <label>Nom de l’appareil<input name="name" required maxlength="80" placeholder="Mon iPhone" autocomplete="off" /></label>
+          <label>Expiration<select name="days"><option value="30">30 jours</option><option value="90" selected>90 jours</option><option value="365">1 an</option></select></label>
+          <button type="submit">Générer un jeton</button>
+        </form>
+        <p id="message" role="status" aria-live="polite"></p>
+        <div id="new-token" hidden>
+          <p>Copiez ce secret maintenant dans votre application iPhone : il ne sera plus affiché ensuite.</p>
+          <label>Jeton personnel<input id="token-secret" readonly autocomplete="off" spellcheck="false" /></label>
+          <button id="copy-token" type="button">Copier</button>
+          <button id="hide-token" type="button">Masquer</button>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Mes jetons actifs</h2>
+        <p>La révocation bloque les prochaines requêtes immédiatement. Un changement de mot de passe invalide aussi les jetons existants.</p>
+        <div id="token-list"></div>
+      </section>
+    </main>
+  </body>
+</html>
